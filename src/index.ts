@@ -16,6 +16,8 @@ program
   .argument('<hash>', '7-character git commit hash')
   .option('-q, --quiet', 'Single line output')
   .option('-s, --small', 'Compact output')
-  .action(playCommand);
+  .action(async (hash: string, options: any) => {
+    await playCommand(hash, options);
+  });
 
 program.parse();
