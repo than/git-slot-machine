@@ -33,7 +33,7 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
     if (!options.small) {
       console.log();
       if (result.payout > 0) {
-        console.log(chalk.green.bold(`${result.name}!`));
+        console.log(chalk.cyan.bold(`${result.name}!`));
         console.log(chalk.yellow(`+${result.payout} credits`));
       } else {
         console.log(chalk.red('No win'));
@@ -47,7 +47,7 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
     } else {
       // Small mode - compact result
       if (result.payout > 0) {
-        console.log(chalk.green(`${result.name} +${result.payout}`));
+        console.log(chalk.cyan(`${result.name} +${result.payout}`));
       } else {
         console.log(chalk.red('No win -1'));
       }

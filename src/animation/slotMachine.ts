@@ -53,14 +53,14 @@ function drawSlotMachine(chars: string[], spinning: boolean, highlightIndices: n
       const isHighlighted = highlightIndices.includes(i);
 
       if (isHighlighted && flash) {
-        // Flash state - gold text on black background (flash effect)
+        // Flash state - gold text (flash effect)
         return chalk.rgb(255, 215, 0).bold(char);
       } else if (isHighlighted) {
-        // Normal highlighted state - black text on gold background (inverted stays on)
-        return chalk.bgRgb(255, 215, 0).black.bold(char);
+        // Normal highlighted state - white text on full black background
+        return chalk.bgBlack.white.bold(char);
       } else {
-        // Not highlighted - white text
-        return chalk.white(char);
+        // Not highlighted - cyan text
+        return chalk.cyan(char);
       }
     }
   }).join('  ');
@@ -150,9 +150,9 @@ export async function animateQuietMode(config: SlotConfig): Promise<void> {
   clearLine();
   const display = finalHash.split('').map((char, i) => {
     if (highlightIndices.includes(i)) {
-      return chalk.bgRgb(255, 215, 0).black.bold(char);
+      return chalk.bgBlack.white.bold(char);
     } else {
-      return chalk.white(char);
+      return chalk.cyan(char);
     }
   }).join('');
   process.stdout.write(chalk.cyan('🎰 ') + display);
@@ -165,9 +165,9 @@ export async function showSmallMode(config: SlotConfig): Promise<void> {
 
   const display = finalHash.split('').map((char, i) => {
     if (highlightIndices.includes(i)) {
-      return chalk.bgRgb(255, 215, 0).black.bold(char);
+      return chalk.bgBlack.white.bold(char);
     } else {
-      return chalk.white(char);
+      return chalk.cyan(char);
     }
   }).join('');
   console.log(chalk.cyan('🎰 ') + display);
