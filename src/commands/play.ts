@@ -1,5 +1,6 @@
 import { detectPattern } from '../patterns';
 import { animateSlotMachine, animateQuietMode, showSmallMode } from '../animation/slotMachine';
+import { updateBalance } from '../balance';
 import chalk from 'chalk';
 
 interface PlayOptions {
@@ -49,6 +50,15 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
       } else {
         console.log(chalk.red('No win -1'));
       }
+    }
+
+    // Update balance
+    const newBalance = updateBalance(hash.toLowerCase(), result.payout);
+
+    // Show balance
+    if (!options.small) {
+      console.log();
+      console.log(chalk.cyan(`Balance: ${newBalance >= 0 ? chalk.green(newBalance) : chalk.red(newBalance)} credits`));
     }
 
   } catch (error) {

@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import { playCommand } from './commands/play';
 import { spinCommand } from './commands/spin';
 import { initCommand } from './commands/init';
+import { balanceCommand } from './commands/balance';
 
 const program = new Command();
 
@@ -35,5 +36,10 @@ program
   .command('init')
   .description('Install post-commit hook in current repository')
   .action(initCommand);
+
+program
+  .command('balance')
+  .description('Show current repository balance and stats')
+  .action(balanceCommand);
 
 program.parse();
