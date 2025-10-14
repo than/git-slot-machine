@@ -12,10 +12,16 @@
     "test": "jest",
     "lint": "eslint src --ext .ts"
   },
-  "keywords": ["git", "slot-machine", "cli", "fun"],
+  "keywords": [
+    "git",
+    "slot-machine",
+    "cli",
+    "fun"
+  ],
   "author": "Than Tibbetts",
   "license": "MIT",
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
