@@ -46,7 +46,7 @@ export function getBalance(): number {
   if (!data.repos[repoPath]) {
     // Initialize new repo
     data.repos[repoPath] = {
-      balance: 10,
+      balance: 100,
       totalCommits: 0,
       totalWinnings: 0,
       biggestWin: 0,
@@ -64,7 +64,7 @@ export function updateBalance(hash: string, payout: number): number {
 
   if (!data.repos[repoPath]) {
     data.repos[repoPath] = {
-      balance: 10,
+      balance: 100,
       totalCommits: 0,
       totalWinnings: 0,
       biggestWin: 0,
@@ -75,7 +75,7 @@ export function updateBalance(hash: string, payout: number): number {
   const repo = data.repos[repoPath];
 
   // Deduct cost
-  repo.balance -= 1;
+  repo.balance -= 10;
   repo.totalCommits += 1;
 
   // Add winnings
