@@ -53,14 +53,14 @@ function drawSlotMachine(chars: string[], spinning: boolean, highlightIndices: n
       const isHighlighted = highlightIndices.includes(i);
 
       if (isHighlighted && flash) {
-        // Flash state - bright gold with black background
-        return chalk.bgRgb(255, 215, 0).black.bold(char);
-      } else if (isHighlighted) {
-        // Normal highlighted state - bright gold
+        // Flash state - gold text on black background (flash effect)
         return chalk.rgb(255, 215, 0).bold(char);
+      } else if (isHighlighted) {
+        // Normal highlighted state - black text on gold background (inverted stays on)
+        return chalk.bgRgb(255, 215, 0).black.bold(char);
       } else {
-        // Not highlighted - dim white
-        return chalk.rgb(180, 180, 180)(char);
+        // Not highlighted - white text
+        return chalk.white(char);
       }
     }
   }).join('  ');
@@ -150,7 +150,7 @@ export async function animateQuietMode(config: SlotConfig): Promise<void> {
   clearLine();
   const display = finalHash.split('').map((char, i) => {
     if (highlightIndices.includes(i)) {
-      return chalk.green.bold(char);
+      return chalk.bgRgb(255, 215, 0).black.bold(char);
     } else {
       return chalk.white(char);
     }
@@ -165,7 +165,7 @@ export async function showSmallMode(config: SlotConfig): Promise<void> {
 
   const display = finalHash.split('').map((char, i) => {
     if (highlightIndices.includes(i)) {
-      return chalk.green.bold(char);
+      return chalk.bgRgb(255, 215, 0).black.bold(char);
     } else {
       return chalk.white(char);
     }
