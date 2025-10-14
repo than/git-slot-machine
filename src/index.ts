@@ -2,6 +2,7 @@
 
 import { Command } from 'commander';
 import { playCommand } from './commands/play';
+import { spinCommand } from './commands/spin';
 
 const program = new Command();
 
@@ -18,6 +19,15 @@ program
   .option('-s, --small', 'Compact output')
   .action(async (hash: string, options: any) => {
     await playCommand(hash, options);
+  });
+
+program
+  .command('spin')
+  .description('Play with the current git commit hash')
+  .option('-q, --quiet', 'Single line output')
+  .option('-s, --small', 'Compact output')
+  .action(async (options: any) => {
+    await spinCommand(options);
   });
 
 program.parse();
