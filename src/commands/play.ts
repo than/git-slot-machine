@@ -39,15 +39,15 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
 
         const payoutText = `+${result.payout} credits`;
         const payoutPadding = Math.floor((boxWidth - payoutText.length) / 2);
-        console.log(' '.repeat(payoutPadding) + chalk.white(payoutText));
+        console.log(' '.repeat(payoutPadding) + chalk.white.bold(payoutText));
       } else {
         const noWinText = 'No win';
         const noWinPadding = Math.floor((boxWidth - noWinText.length) / 2);
-        console.log(' '.repeat(noWinPadding) + chalk.red(noWinText));
+        console.log(' '.repeat(noWinPadding) + chalk.red.bold(noWinText));
 
         const lossText = '-10 credits';
         const lossPadding = Math.floor((boxWidth - lossText.length) / 2);
-        console.log(' '.repeat(lossPadding) + chalk.white(lossText));
+        console.log(' '.repeat(lossPadding) + chalk.white.bold(lossText));
       }
 
       console.log();
@@ -73,7 +73,7 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
       // Note: we can't measure the exact length with color codes, so estimate based on text content
       const balanceText = `Balance: ${newBalance} credits`;
       const balancePadding = Math.floor((boxWidth - balanceText.length) / 2);
-      console.log(' '.repeat(balancePadding) + chalk.cyan(`Balance: ${newBalance >= 0 ? chalk.green(newBalance) : chalk.red(newBalance)} credits`));
+      console.log(' '.repeat(balancePadding) + chalk.white.bold(`Balance: ${newBalance >= 0 ? chalk.green.bold(newBalance) : chalk.red.bold(newBalance)} credits`));
     }
 
   } catch (error) {
