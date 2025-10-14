@@ -1,0 +1,31 @@
+{
+  "name": "git-slot-machine",
+  "version": "0.1.0",
+  "description": "Git commit slot machine with animated ASCII output",
+  "main": "dist/index.js",
+  "bin": {
+    "git-slot-machine": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src --ext .ts"
+  },
+  "keywords": ["git", "slot-machine", "cli", "fun"],
+  "author": "Than Tibbetts",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^11.0.0"
+  }
+}
