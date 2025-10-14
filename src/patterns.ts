@@ -184,14 +184,15 @@ function getHighlightIndices(hash: string, type: PatternType): number[] {
     }
   }
   else if (type === PatternType.THREE_PAIR || type === PatternType.TWO_PAIR) {
-    // Highlight all paired characters
-    for (const [char, count] of counts.entries()) {
-      if (count === 2) {
-        for (let i = 0; i < lowerHash.length; i++) {
-          if (lowerHash[i] === char) {
-            indices.push(i);
-          }
-        }
+    // Highlight only consecutive pairs (adjacent identical characters)
+    let i = 0;
+    while (i < lowerHash.length - 1) {
+      if (lowerHash[i] === lowerHash[i + 1]) {
+        indices.push(i);
+        indices.push(i + 1);
+        i += 2; // Skip both characters of the pair
+      } else {
+        i++;
       }
     }
   }
@@ -259,13 +260,13 @@ export function detectPattern(hash: string): PatternResult {
   else if (distribution[0] === 3 && distribution[1] === 2) {
     type = PatternType.FULL_HOUSE;
   }
-  // Check for three consecutive pairs
-  else if (countConsecutivePairs(lowerHash) === 3) {
-    type = PatternType.THREE_PAIR;
-  }
   // Check for 3 of a kind
   else if (distribution[0] === 3) {
     type = PatternType.THREE_OF_KIND;
+  }
+  // Check for three consecutive pairs
+  else if (countConsecutivePairs(lowerHash) === 3) {
+    type = PatternType.THREE_PAIR;
   }
   // Check for two consecutive pairs
   else if (countConsecutivePairs(lowerHash) === 2) {
