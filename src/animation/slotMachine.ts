@@ -22,9 +22,9 @@ function clearLine(): void {
 }
 
 function drawSlotMachine(chars: string[], spinning: boolean, highlightIndices: number[] = [], flash: boolean = false): void {
-  // Casino color palette: red/gold for borders, yellow for title
+  // Casino color palette: red borders, white title
   const borderColor = chalk.rgb(220, 20, 60); // Crimson red
-  const titleColor = chalk.rgb(255, 215, 0); // Gold
+  const titleColor = chalk.white; // White
 
   const borderWidth = 39;
   const border = '═'.repeat(borderWidth);
