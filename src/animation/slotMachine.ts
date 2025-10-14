@@ -26,13 +26,21 @@ function drawSlotMachine(chars: string[], spinning: boolean, highlightIndices: n
   const borderColor = chalk.rgb(220, 20, 60); // Crimson red
   const titleColor = chalk.rgb(255, 215, 0); // Gold
 
-  const border = '═'.repeat(35);
+  const borderWidth = 39;
+  const border = '═'.repeat(borderWidth);
   const topBorder = borderColor('╔' + border + '╗');
   const middleBorder = borderColor('╠' + border + '╣');
   const bottomBorder = borderColor('╚' + border + '╝');
 
+  // Title line - emojis count as 2 visual chars each
+  const titleText = 'GIT SLOT MACHINE';
+  const titleVisualWidth = 2 + 2 + titleText.length + 2 + 2; // emoji + spaces + text + spaces + emoji
+  const titlePadding = Math.floor((borderWidth - titleVisualWidth) / 2);
+  const titleRightPad = borderWidth - titleVisualWidth - titlePadding;
+  const titleLine = borderColor('║') + ' '.repeat(titlePadding) + titleColor('🎰  ' + titleText + '  🎰') + ' '.repeat(titleRightPad) + borderColor('║');
+
   console.log(topBorder);
-  console.log(borderColor('║') + titleColor('        🎰  GIT SLOT MACHINE  🎰       ') + borderColor('║'));
+  console.log(titleLine);
   console.log(middleBorder);
 
   // Display the 7 characters as slot reels
@@ -57,7 +65,13 @@ function drawSlotMachine(chars: string[], spinning: boolean, highlightIndices: n
     }
   }).join('  ');
 
-  console.log(borderColor('║') + '          ' + display + '          ' + borderColor('║'));
+  // Calculate padding for character display (7 chars + 6 double-space separators = 19 visual chars)
+  const displayVisualWidth = 7 + 12; // 7 chars + 6*2 spaces
+  const displayPadding = Math.floor((borderWidth - displayVisualWidth) / 2);
+  const displayRightPad = borderWidth - displayVisualWidth - displayPadding;
+  const displayLine = borderColor('║') + ' '.repeat(displayPadding) + display + ' '.repeat(displayRightPad) + borderColor('║');
+
+  console.log(displayLine);
   console.log(bottomBorder);
 }
 
