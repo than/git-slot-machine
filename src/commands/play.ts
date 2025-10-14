@@ -37,7 +37,7 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
         console.log(chalk.white(`+${result.payout} credits`));
       } else {
         console.log(chalk.red('No win'));
-        console.log(chalk.gray('-10 credits'));
+        console.log(chalk.white('-10 credits'));
       }
 
       if (!options.quiet) {
