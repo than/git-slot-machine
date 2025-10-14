@@ -22,36 +22,42 @@ function clearLine(): void {
 }
 
 function drawSlotMachine(chars: string[], spinning: boolean, highlightIndices: number[] = [], flash: boolean = false): void {
-  const border = chalk.cyan('═'.repeat(30));
-  const topBorder = chalk.cyan('╔') + border + chalk.cyan('╗');
-  const bottomBorder = chalk.cyan('╚') + border + chalk.cyan('╣');
+  // Casino color palette: red/gold for borders, yellow for title
+  const borderColor = chalk.rgb(220, 20, 60); // Crimson red
+  const titleColor = chalk.rgb(255, 215, 0); // Gold
+
+  const border = '═'.repeat(35);
+  const topBorder = borderColor('╔' + border + '╗');
+  const middleBorder = borderColor('╠' + border + '╣');
+  const bottomBorder = borderColor('╚' + border + '╝');
 
   console.log(topBorder);
-  console.log(chalk.cyan('║') + '   ' + chalk.yellow('GIT SLOT MACHINE') + '    ' + chalk.cyan('║'));
-  console.log(chalk.cyan('╠') + border + chalk.cyan('╣'));
+  console.log(borderColor('║') + titleColor('        🎰  GIT SLOT MACHINE  🎰       ') + borderColor('║'));
+  console.log(middleBorder);
 
   // Display the 7 characters as slot reels
   const display = chars.map((char, i) => {
     if (spinning) {
+      // Spinning - white blur
       return chalk.white.bold(char);
     } else {
       // Check if this character should be highlighted
       const isHighlighted = highlightIndices.includes(i);
 
       if (isHighlighted && flash) {
-        // Flash state - use inverse colors
-        return chalk.green.bold.inverse(char);
+        // Flash state - bright gold with black background
+        return chalk.bgRgb(255, 215, 0).black.bold(char);
       } else if (isHighlighted) {
-        // Normal highlighted state
-        return chalk.green.bold(char);
+        // Normal highlighted state - bright gold
+        return chalk.rgb(255, 215, 0).bold(char);
       } else {
-        // Not highlighted
-        return chalk.white(char);
+        // Not highlighted - dim white
+        return chalk.rgb(180, 180, 180)(char);
       }
     }
-  }).join(' ');
+  }).join('  ');
 
-  console.log(chalk.cyan('║') + '       ' + display + '       ' + chalk.cyan('║'));
+  console.log(borderColor('║') + '          ' + display + '          ' + borderColor('║'));
   console.log(bottomBorder);
 }
 
