@@ -22,6 +22,7 @@ export interface PatternResult {
   name: string;
   payout: number;
   description: string;
+  highlightIndices: number[]; // Indices of characters to highlight
 }
 
 const PAYOUTS: Record<PatternType, { name: string; payout: number; description: string }> = {
@@ -95,6 +96,90 @@ function isAllLetters(hash: string): boolean {
 
 function isAllNumbers(hash: string): boolean {
   return /^[0-9]+$/.test(hash);
+}
+
+function getHighlightIndices(hash: string, type: PatternType): number[] {
+  const lowerHash = hash.toLowerCase();
+
+  // For straights, highlight all characters in the sequential run
+  if (type === PatternType.STRAIGHT_7 || type === PatternType.STRAIGHT_6 || type === PatternType.STRAIGHT_5) {
+    const length = type === PatternType.STRAIGHT_7 ? 7 : type === PatternType.STRAIGHT_6 ? 6 : 5;
+    const hexValues = '0123456789abcdef';
+
+    for (let i = 0; i <= lowerHash.length - length; i++) {
+      const substring = lowerHash.substring(i, i + length);
+      let isSequential = true;
+
+      // Check ascending
+      for (let j = 0; j < substring.length - 1; j++) {
+        const currentIndex = hexValues.indexOf(substring[j]);
+        const nextIndex = hexValues.indexOf(substring[j + 1]);
+        if (nextIndex !== currentIndex + 1 && nextIndex !== currentIndex - 1) {
+          isSequential = false;
+          break;
+        }
+      }
+
+      if (isSequential) {
+        return Array.from({ length }, (_, idx) => i + idx);
+      }
+    }
+  }
+
+  // For all letters or all numbers, highlight everything
+  if (type === PatternType.ALL_LETTERS || type === PatternType.ALL_NUMBERS || type === PatternType.ALL_SAME) {
+    return [0, 1, 2, 3, 4, 5, 6];
+  }
+
+  // For frequency-based patterns, highlight characters that appear in the pattern
+  const counts = countCharacters(lowerHash);
+  const indices: number[] = [];
+
+  if (type === PatternType.SIX_OF_KIND || type === PatternType.FIVE_OF_KIND ||
+      type === PatternType.FOUR_OF_KIND || type === PatternType.THREE_OF_KIND) {
+    // Find the character with the highest count and highlight all occurrences
+    const targetCount = type === PatternType.SIX_OF_KIND ? 6 :
+                        type === PatternType.FIVE_OF_KIND ? 5 :
+                        type === PatternType.FOUR_OF_KIND ? 4 : 3;
+
+    for (const [char, count] of counts.entries()) {
+      if (count === targetCount) {
+        for (let i = 0; i < lowerHash.length; i++) {
+          if (lowerHash[i] === char) {
+            indices.push(i);
+          }
+        }
+        break;
+      }
+    }
+  }
+  else if (type === PatternType.FULLEST_HOUSE || type === PatternType.FULL_HOUSE ||
+           type === PatternType.THREE_OF_KIND_PLUS_THREE) {
+    // Highlight all paired/tripled characters
+    for (const [char, count] of counts.entries()) {
+      if (count >= 2) {
+        for (let i = 0; i < lowerHash.length; i++) {
+          if (lowerHash[i] === char) {
+            indices.push(i);
+          }
+        }
+      }
+    }
+  }
+  else if (type === PatternType.THREE_PAIR || type === PatternType.TWO_PAIR) {
+    // Highlight all paired characters
+    for (const [char, count] of counts.entries()) {
+      if (count === 2) {
+        for (let i = 0; i < lowerHash.length; i++) {
+          if (lowerHash[i] === char) {
+            indices.push(i);
+          }
+        }
+      }
+    }
+  }
+
+  return indices.sort((a, b) => a - b);
 }
 
 export function detectPattern(hash: string): PatternResult {
@@ -183,6 +268,7 @@ export function detectPattern(hash: string): PatternResult {
     type,
     name: config.name,
     payout: config.payout,
-    description: config.description
+    description: config.description,
+    highlightIndices: getHighlightIndices(hash, type)
   };
 }

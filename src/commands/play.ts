@@ -17,7 +17,8 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
     const config = {
       finalHash: hash.toLowerCase(),
       quiet: options.quiet || false,
-      small: options.small || false
+      small: options.small || false,
+      patternResult: result
     };
 
     if (options.small) {

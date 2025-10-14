@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { PatternResult } from '../patterns';
 
 const HEX_CHARS = '0123456789abcdef'.split('');
 const ANIMATION_SPEED = 50; // ms per frame
@@ -9,6 +10,7 @@ export interface SlotConfig {
   finalHash: string;
   quiet: boolean;
   small: boolean;
+  patternResult?: PatternResult;
 }
 
 function getRandomHexChar(): string {
@@ -19,7 +21,7 @@ function clearLine(): void {
   process.stdout.write('\r\x1b[K');
 }
 
-function drawSlotMachine(chars: string[], spinning: boolean): void {
+function drawSlotMachine(chars: string[], spinning: boolean, highlightIndices: number[] = [], flash: boolean = false): void {
   const border = chalk.cyan('═'.repeat(30));
   const topBorder = chalk.cyan('╔') + border + chalk.cyan('╗');
   const bottomBorder = chalk.cyan('╚') + border + chalk.cyan('╣');
@@ -33,8 +35,19 @@ function drawSlotMachine(chars: string[], spinning: boolean): void {
     if (spinning) {
       return chalk.white.bold(char);
     } else {
-      // Highlight final result
-      return chalk.green.bold(char);
+      // Check if this character should be highlighted
+      const isHighlighted = highlightIndices.includes(i);
+
+      if (isHighlighted && flash) {
+        // Flash state - use inverse colors
+        return chalk.green.bold.inverse(char);
+      } else if (isHighlighted) {
+        // Normal highlighted state
+        return chalk.green.bold(char);
+      } else {
+        // Not highlighted
+        return chalk.white(char);
+      }
     }
   }).join(' ');
 
@@ -43,7 +56,8 @@ function drawSlotMachine(chars: string[], spinning: boolean): void {
 }
 
 export async function animateSlotMachine(config: SlotConfig): Promise<void> {
-  const { finalHash } = config;
+  const { finalHash, patternResult } = config;
+  const highlightIndices = patternResult?.highlightIndices || [];
 
   // Clear screen
   console.clear();
@@ -75,13 +89,32 @@ export async function animateSlotMachine(config: SlotConfig): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, ANIMATION_SPEED));
   }
 
-  // Final reveal
+  // Final reveal with flashing
+  const finalChars = finalHash.split('');
+
+  // Flash 3 times if there are highlighted characters
+  if (highlightIndices.length > 0) {
+    for (let flashCount = 0; flashCount < 3; flashCount++) {
+      // Flash on
+      console.clear();
+      drawSlotMachine(finalChars, false, highlightIndices, true);
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Flash off
+      console.clear();
+      drawSlotMachine(finalChars, false, highlightIndices, false);
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+  }
+
+  // Steady state
   console.clear();
-  drawSlotMachine(finalHash.split(''), false);
+  drawSlotMachine(finalChars, false, highlightIndices, false);
 }
 
 export async function animateQuietMode(config: SlotConfig): Promise<void> {
-  const { finalHash } = config;
+  const { finalHash, patternResult } = config;
+  const highlightIndices = patternResult?.highlightIndices || [];
 
   // Single line, rapid character flicker
   process.stdout.write(chalk.cyan('🎰 '));
@@ -93,13 +126,29 @@ export async function animateQuietMode(config: SlotConfig): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 50));
   }
 
-  // Final
+  // Final with highlighting
   clearLine();
-  process.stdout.write(chalk.cyan('🎰 ') + chalk.green.bold(finalHash));
+  const display = finalHash.split('').map((char, i) => {
+    if (highlightIndices.includes(i)) {
+      return chalk.green.bold(char);
+    } else {
+      return chalk.white(char);
+    }
+  }).join('');
+  process.stdout.write(chalk.cyan('🎰 ') + display);
   console.log();
 }
 
 export async function showSmallMode(config: SlotConfig): Promise<void> {
-  const { finalHash } = config;
-  console.log(chalk.cyan('🎰 ') + chalk.green.bold(finalHash));
+  const { finalHash, patternResult } = config;
+  const highlightIndices = patternResult?.highlightIndices || [];
+
+  const display = finalHash.split('').map((char, i) => {
+    if (highlightIndices.includes(i)) {
+      return chalk.green.bold(char);
+    } else {
+      return chalk.white(char);
+    }
+  }).join('');
+  console.log(chalk.cyan('🎰 ') + display);
 }
