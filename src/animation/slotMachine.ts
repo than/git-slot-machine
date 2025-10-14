@@ -79,3 +79,27 @@ export async function animateSlotMachine(config: SlotConfig): Promise<void> {
   console.clear();
   drawSlotMachine(finalHash.split(''), false);
 }
+
+export async function animateQuietMode(config: SlotConfig): Promise<void> {
+  const { finalHash } = config;
+
+  // Single line, rapid character flicker
+  process.stdout.write(chalk.cyan('🎰 '));
+
+  for (let frame = 0; frame < 20; frame++) {
+    const chars = Array(7).fill(0).map(() => getRandomHexChar()).join('');
+    clearLine();
+    process.stdout.write(chalk.cyan('🎰 ') + chalk.white(chars));
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+
+  // Final
+  clearLine();
+  process.stdout.write(chalk.cyan('🎰 ') + chalk.green.bold(finalHash));
+  console.log();
+}
+
+export async function showSmallMode(config: SlotConfig): Promise<void> {
+  const { finalHash } = config;
+  console.log(chalk.cyan('🎰 ') + chalk.green.bold(finalHash));
+}

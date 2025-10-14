@@ -1,5 +1,5 @@
 import { detectPattern } from '../patterns';
-import { animateSlotMachine } from '../animation/slotMachine';
+import { animateSlotMachine, animateQuietMode, showSmallMode } from '../animation/slotMachine';
 import chalk from 'chalk';
 
 interface PlayOptions {
@@ -12,26 +12,44 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
     // Detect pattern
     const result = detectPattern(hash);
 
-    // Animate
-    if (!options.quiet && !options.small) {
-      await animateSlotMachine({
-        finalHash: hash.toLowerCase(),
-        quiet: options.quiet || false,
-        small: options.small || false
-      });
+    // Animate based on mode
+    const config = {
+      finalHash: hash.toLowerCase(),
+      quiet: options.quiet || false,
+      small: options.small || false
+    };
+
+    if (options.small) {
+      await showSmallMode(config);
+    } else if (options.quiet) {
+      await animateQuietMode(config);
+    } else {
+      await animateSlotMachine(config);
     }
 
     // Show result
-    console.log();
-    if (result.payout > 0) {
-      console.log(chalk.green.bold(`🎰 ${result.name}!`));
-      console.log(chalk.yellow(`+${result.payout} credits`));
+    if (!options.small) {
+      console.log();
+      if (result.payout > 0) {
+        console.log(chalk.green.bold(`${result.name}!`));
+        console.log(chalk.yellow(`+${result.payout} credits`));
+      } else {
+        console.log(chalk.red('No win'));
+        console.log(chalk.gray('-1 credit'));
+      }
+
+      if (!options.quiet) {
+        console.log();
+        console.log(chalk.dim(result.description));
+      }
     } else {
-      console.log(chalk.red('No win'));
-      console.log(chalk.gray('-1 credit'));
+      // Small mode - compact result
+      if (result.payout > 0) {
+        console.log(chalk.green(`${result.name} +${result.payout}`));
+      } else {
+        console.log(chalk.red('No win -1'));
+      }
     }
-    console.log();
-    console.log(chalk.dim(result.description));
 
   } catch (error) {
     console.error(chalk.red(`Error: ${(error as Error).message}`));
