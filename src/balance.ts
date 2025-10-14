@@ -14,7 +14,7 @@ interface BalanceData {
 
 const BALANCE_FILE = path.join(os.homedir(), '.git-slot-machine-balance.json');
 
-function getRepoPath(): string {
+function getRepoPath(): string | null {
   try {
     const { execSync } = require('child_process');
     return execSync('git rev-parse --show-toplevel', {
@@ -22,7 +22,8 @@ function getRepoPath(): string {
       stdio: ['pipe', 'pipe', 'pipe']
     }).trim();
   } catch {
-    throw new Error('Not a git repository');
+    // Not in a git repo - use global balance instead
+    return null;
   }
 }
 
@@ -40,7 +41,7 @@ function saveBalance(data: BalanceData): void {
 }
 
 export function getBalance(): number {
-  const repoPath = getRepoPath();
+  const repoPath = getRepoPath() || 'global';
   const data = loadBalance();
 
   if (!data.repos[repoPath]) {
@@ -59,7 +60,7 @@ export function getBalance(): number {
 }
 
 export function updateBalance(hash: string, payout: number): number {
-  const repoPath = getRepoPath();
+  const repoPath = getRepoPath() || 'global';
   const data = loadBalance();
 
   if (!data.repos[repoPath]) {
@@ -92,7 +93,7 @@ export function updateBalance(hash: string, payout: number): number {
 }
 
 export function getRepoStats() {
-  const repoPath = getRepoPath();
+  const repoPath = getRepoPath() || 'global';
   const data = loadBalance();
   return data.repos[repoPath] || null;
 }

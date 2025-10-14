@@ -8,7 +8,6 @@ const FRAMES = SPIN_DURATION / ANIMATION_SPEED;
 
 export interface SlotConfig {
   finalHash: string;
-  quiet: boolean;
   small: boolean;
   patternResult?: PatternResult;
 }
@@ -37,7 +36,7 @@ function drawSlotMachine(chars: string[], spinning: boolean, highlightIndices: n
   const titleVisualWidth = 2 + 2 + titleText.length + 2 + 2; // emoji + spaces + text + spaces + emoji
   const titlePadding = Math.floor((borderWidth - titleVisualWidth) / 2);
   const titleRightPad = borderWidth - titleVisualWidth - titlePadding;
-  const titleLine = borderColor('║') + ' '.repeat(titlePadding) + titleColor('🎰  ' + titleText + '  🎰') + ' '.repeat(titleRightPad) + borderColor('║');
+  const titleLine = borderColor('║') + ' '.repeat(titlePadding) + chalk.rgb(255, 255, 255)('🎰  ' + titleText + '  🎰') + ' '.repeat(titleRightPad) + borderColor('║');
 
   console.log(topBorder);
   console.log(titleLine);
@@ -47,20 +46,20 @@ function drawSlotMachine(chars: string[], spinning: boolean, highlightIndices: n
   const display = chars.map((char, i) => {
     if (spinning) {
       // Spinning - white blur
-      return chalk.white.bold(char);
+      return chalk.rgb(255, 255, 255).bold(char);
     } else {
       // Check if this character should be highlighted
       const isHighlighted = highlightIndices.includes(i);
 
       if (isHighlighted && flash) {
-        // Flash state - gold text (flash effect)
-        return chalk.rgb(255, 215, 0).bold(char);
+        // Flash state - yellow inverse (yellow background, black text)
+        return chalk.bgRgb(255, 255, 0).rgb(0, 0, 0).bold(char);
       } else if (isHighlighted) {
-        // Normal highlighted state - white text on full black background
-        return chalk.bgBlack.white.bold(char);
+        // Normal highlighted state - yellow inverse (yellow background, black text)
+        return chalk.bgRgb(255, 255, 0).rgb(0, 0, 0).bold(char);
       } else {
-        // Not highlighted - cyan text
-        return chalk.cyan(char);
+        // Not highlighted - white text
+        return chalk.rgb(255, 255, 255)(char);
       }
     }
   }).join('  ');
@@ -132,7 +131,7 @@ export async function animateSlotMachine(config: SlotConfig): Promise<void> {
   drawSlotMachine(finalChars, false, highlightIndices, false);
 }
 
-export async function animateQuietMode(config: SlotConfig): Promise<void> {
+export async function animateSmallMode(config: SlotConfig): Promise<void> {
   const { finalHash, patternResult } = config;
   const highlightIndices = patternResult?.highlightIndices || [];
 
@@ -142,33 +141,19 @@ export async function animateQuietMode(config: SlotConfig): Promise<void> {
   for (let frame = 0; frame < 20; frame++) {
     const chars = Array(7).fill(0).map(() => getRandomHexChar()).join('');
     clearLine();
-    process.stdout.write(chalk.cyan('🎰 ') + chalk.white(chars));
+    process.stdout.write(chalk.cyan('🎰 ') + chalk.rgb(255, 255, 255)(chars));
     await new Promise(resolve => setTimeout(resolve, 50));
   }
 
-  // Final with highlighting
+  // Final with highlighting - don't add newline, let the caller add result info
   clearLine();
   const display = finalHash.split('').map((char, i) => {
     if (highlightIndices.includes(i)) {
-      return chalk.bgBlack.white.bold(char);
+      return chalk.bgRgb(255, 255, 0).rgb(0, 0, 0).bold(char);
     } else {
-      return chalk.cyan(char);
+      return chalk.rgb(255, 255, 255)(char);
     }
   }).join('');
   process.stdout.write(chalk.cyan('🎰 ') + display);
-  console.log();
-}
-
-export async function showSmallMode(config: SlotConfig): Promise<void> {
-  const { finalHash, patternResult } = config;
-  const highlightIndices = patternResult?.highlightIndices || [];
-
-  const display = finalHash.split('').map((char, i) => {
-    if (highlightIndices.includes(i)) {
-      return chalk.bgBlack.white.bold(char);
-    } else {
-      return chalk.cyan(char);
-    }
-  }).join('');
-  console.log(chalk.cyan('🎰 ') + display);
+  // Don't write newline - let caller continue on same line
 }

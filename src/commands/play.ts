@@ -1,10 +1,9 @@
 import { detectPattern } from '../patterns';
-import { animateSlotMachine, animateQuietMode, showSmallMode } from '../animation/slotMachine';
+import { animateSlotMachine, animateSmallMode } from '../animation/slotMachine';
 import { updateBalance } from '../balance';
 import chalk from 'chalk';
 
 interface PlayOptions {
-  quiet?: boolean;
   small?: boolean;
 }
 
@@ -16,15 +15,12 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
     // Animate based on mode
     const config = {
       finalHash: hash.toLowerCase(),
-      quiet: options.quiet || false,
       small: options.small || false,
       patternResult: result
     };
 
     if (options.small) {
-      await showSmallMode(config);
-    } else if (options.quiet) {
-      await animateQuietMode(config);
+      await animateSmallMode(config);
     } else {
       await animateSlotMachine(config);
     }
@@ -32,34 +28,52 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
     // Show result
     if (!options.small) {
       console.log();
+
+      // Center the text below the box (box width is 41 chars)
+      const boxWidth = 41;
+
       if (result.payout > 0) {
-        console.log(chalk.cyan.bold(`${result.name}!`));
-        console.log(chalk.white(`+${result.payout} credits`));
+        const resultText = `${result.name}!`;
+        const resultPadding = Math.floor((boxWidth - resultText.length) / 2);
+        console.log(' '.repeat(resultPadding) + chalk.cyan.bold(resultText));
+
+        const payoutText = `+${result.payout} credits`;
+        const payoutPadding = Math.floor((boxWidth - payoutText.length) / 2);
+        console.log(' '.repeat(payoutPadding) + chalk.white(payoutText));
       } else {
-        console.log(chalk.red('No win'));
-        console.log(chalk.white('-10 credits'));
+        const noWinText = 'No win';
+        const noWinPadding = Math.floor((boxWidth - noWinText.length) / 2);
+        console.log(' '.repeat(noWinPadding) + chalk.red(noWinText));
+
+        const lossText = '-10 credits';
+        const lossPadding = Math.floor((boxWidth - lossText.length) / 2);
+        console.log(' '.repeat(lossPadding) + chalk.white(lossText));
       }
 
-      if (!options.quiet) {
-        console.log();
-        console.log(chalk.dim(result.description));
-      }
-    } else {
-      // Small mode - compact result
-      if (result.payout > 0) {
-        console.log(chalk.cyan(`${result.name} +${result.payout}`));
-      } else {
-        console.log(chalk.red('No win -1'));
-      }
+      console.log();
+      const descText = result.description;
+      const descPadding = Math.floor((boxWidth - descText.length) / 2);
+      console.log(' '.repeat(descPadding) + chalk.dim(descText));
     }
 
     // Update balance
     const newBalance = updateBalance(hash.toLowerCase(), result.payout);
 
-    // Show balance
-    if (!options.small) {
+    // Show result and balance
+    if (options.small) {
+      // Small mode - everything on one line (animateSmallMode already wrote the hash without newline)
+      if (result.payout > 0) {
+        console.log(chalk.dim(' • ') + chalk.cyan.bold(`${result.name} +${result.payout}`) + chalk.dim(' • ') + chalk.white(`Balance: ${chalk.green.bold(newBalance)}`));
+      } else {
+        console.log(chalk.dim(' • ') + chalk.red('No win -10') + chalk.dim(' • ') + chalk.white(`Balance: ${newBalance >= 0 ? chalk.green.bold(newBalance) : chalk.red.bold(newBalance)}`));
+      }
+    } else {
       console.log();
-      console.log(chalk.cyan(`Balance: ${newBalance >= 0 ? chalk.green(newBalance) : chalk.red(newBalance)} credits`));
+      const boxWidth = 41;
+      // Note: we can't measure the exact length with color codes, so estimate based on text content
+      const balanceText = `Balance: ${newBalance} credits`;
+      const balancePadding = Math.floor((boxWidth - balanceText.length) / 2);
+      console.log(' '.repeat(balancePadding) + chalk.cyan(`Balance: ${newBalance >= 0 ? chalk.green(newBalance) : chalk.red(newBalance)} credits`));
     }
 
   } catch (error) {

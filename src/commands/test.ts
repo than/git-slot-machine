@@ -1,7 +1,6 @@
 import { playCommand } from './play';
 
 interface TestOptions {
-  quiet?: boolean;
   small?: boolean;
 }
 

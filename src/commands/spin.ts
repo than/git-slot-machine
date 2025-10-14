@@ -2,7 +2,6 @@ import { getCurrentCommitHash } from '../utils/git';
 import { playCommand } from './play';
 
 interface SpinOptions {
-  quiet?: boolean;
   small?: boolean;
 }
 
