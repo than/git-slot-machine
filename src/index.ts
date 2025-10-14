@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import { playCommand } from './commands/play';
 import { spinCommand } from './commands/spin';
+import { initCommand } from './commands/init';
 
 const program = new Command();
 
@@ -29,5 +30,10 @@ program
   .action(async (options: any) => {
     await spinCommand(options);
   });
+
+program
+  .command('init')
+  .description('Install post-commit hook in current repository')
+  .action(initCommand);
 
 program.parse();
