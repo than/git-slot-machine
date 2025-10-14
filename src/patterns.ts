@@ -37,9 +37,9 @@ const PAYOUTS: Record<PatternType, { name: string; payout: number; description: 
   [PatternType.STRAIGHT_5]: { name: 'STRAIGHT', payout: 200, description: 'Five in a row' },
   [PatternType.THREE_OF_KIND_PLUS_THREE]: { name: 'DOUBLE TRIPLE', payout: 150, description: 'Two three of a kinds' },
   [PatternType.FULL_HOUSE]: { name: 'FULL HOUSE', payout: 100, description: 'Three and two of a kind' },
-  [PatternType.THREE_PAIR]: { name: 'THREE PAIR', payout: 75, description: 'Three pairs' },
+  [PatternType.THREE_PAIR]: { name: 'THREE PAIR', payout: 150, description: 'Three consecutive pairs' },
   [PatternType.THREE_OF_KIND]: { name: 'THREE OF A KIND', payout: 50, description: 'Three of a kind' },
-  [PatternType.TWO_PAIR]: { name: 'TWO PAIR', payout: 25, description: 'Two pairs' },
+  [PatternType.TWO_PAIR]: { name: 'TWO PAIR', payout: 50, description: 'Two consecutive pairs' },
   [PatternType.ALL_NUMBERS]: { name: 'ALL NUMBERS', payout: 10, description: 'Only numbers (0-9)' },
   [PatternType.NO_WIN]: { name: 'NO WIN', payout: 0, description: 'No winning pattern' }
 };
@@ -96,6 +96,23 @@ function isAllLetters(hash: string): boolean {
 
 function isAllNumbers(hash: string): boolean {
   return /^[0-9]+$/.test(hash);
+}
+
+function countConsecutivePairs(hash: string): number {
+  // Count pairs of consecutive identical characters (e.g., "33" or "bb")
+  let pairCount = 0;
+  let i = 0;
+
+  while (i < hash.length - 1) {
+    if (hash[i] === hash[i + 1]) {
+      pairCount++;
+      i += 2; // Skip both characters of the pair
+    } else {
+      i++;
+    }
+  }
+
+  return pairCount;
 }
 
 function getHighlightIndices(hash: string, type: PatternType): number[] {
@@ -242,16 +259,16 @@ export function detectPattern(hash: string): PatternResult {
   else if (distribution[0] === 3 && distribution[1] === 2) {
     type = PatternType.FULL_HOUSE;
   }
-  // Check for three pair
-  else if (distribution[0] === 2 && distribution[1] === 2 && distribution[2] === 2) {
+  // Check for three consecutive pairs
+  else if (countConsecutivePairs(lowerHash) === 3) {
     type = PatternType.THREE_PAIR;
   }
   // Check for 3 of a kind
   else if (distribution[0] === 3) {
     type = PatternType.THREE_OF_KIND;
   }
-  // Check for two pair
-  else if (distribution[0] === 2 && distribution[1] === 2) {
+  // Check for two consecutive pairs
+  else if (countConsecutivePairs(lowerHash) === 2) {
     type = PatternType.TWO_PAIR;
   }
   // Check for all numbers (break-even)

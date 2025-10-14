@@ -17,35 +17,41 @@ git-slot-machine play <hash>
 # Play with current commit
 git-slot-machine spin
 
+# Play with current commit (single-line animated mode)
+git-slot-machine spin --small
+
 # Install post-commit hook
 git-slot-machine init
 
 # Check your balance
 git-slot-machine balance
+
+# Test with a random hash
+git-slot-machine test
 ```
 
 ## Winning Patterns & Payouts
 
 Every commit costs **10 credits**. You start with **100 credits**.
 
-| Pattern | Example | Payout | Odds | Description |
-|---------|---------|--------|------|-------------|
-| **JACKPOT** | `aaaaaaa` | +10000 | 1 in 16,777,216 | All same character |
-| **HEXTET** | `aaaaaa1` | +5000 | 1 in 159,784 | Six of a kind |
-| **LUCKY SEVEN** | `1234567` | +2500 | Very Rare | Seven in a row |
-| **FULLEST HOUSE** | `aaaabbb` | +2000 | 1 in 31,956 | 4 + 3 of a kind |
-| **FIVE OF A KIND** | `aaaaa12` | +1000 | 1 in 7,989 | Five of a kind |
-| **BIG STRAIGHT** | `a012345` | +500 | Rare | Six in a row |
-| **FOUR OF A KIND** | `aaaa123` | +400 | 1 in 799 | Four of a kind |
-| **ALL LETTERS** | `abcdefa` | +300 | 1 in 959 | Only letters (a-f) |
-| **STRAIGHT** | `ab01234` | +200 | Uncommon | Five in a row |
-| **DOUBLE TRIPLE** | `aaabbb1` | +150 | 1 in ~2,000 | Two three of a kinds |
-| **FULL HOUSE** | `aaaabb1` | +100 | 1 in ~1,000 | Three and two of a kind |
-| **THREE PAIR** | `aabbcc1` | +75 | 1 in 58 | Three pairs |
-| **THREE OF A KIND** | `aaa1234` | +50 | 1 in 133 | Three of a kind |
-| **TWO PAIR** | `aa11bcd` | +25 | 1 in 5.67 | Two pairs |
-| **ALL NUMBERS** | `1230984` | +10 | 1 in 26.8 | Only numbers (break even) |
-| **NO WIN** | `abcd123` | -10 | ~50% | No pattern (includes one pair) |
+| Pattern | Example | Payout | Probability | Expected Value | ROI per Win | Description |
+|---------|---------|--------|-------------|----------------|-------------|-------------|
+| **JACKPOT** | `aaaaaaa` | +10,000 | 1 in 16,777,216 | +0.0006 | +99,900% | All same character |
+| **HEXTET** | `aaaaaa1` | +5,000 | 1 in 159,784 | +0.031 | +49,900% | Six of a kind |
+| **LUCKY SEVEN** | `1234567` | +2,500 | 1 in ~2,500,000 | ~+0.001 | +24,900% | Seven in a row |
+| **FULLEST HOUSE** | `aaaabbb` | +2,000 | 1 in 31,956 | +0.063 | +19,900% | 4 + 3 of a kind |
+| **FIVE OF A KIND** | `aaaaa12` | +1,000 | 1 in 7,989 | +0.125 | +9,900% | Five of a kind |
+| **BIG STRAIGHT** | `012345a` | +500 | 1 in ~280,000 | ~+0.002 | +4,900% | Six in a row |
+| **FOUR OF A KIND** | `aaaa123` | +400 | 1 in 799 | +0.501 | +3,900% | Four of a kind |
+| **ALL LETTERS** | `abcdefa` | +300 | 1 in 959 | +0.313 | +2,900% | Only letters (a-f) |
+| **STRAIGHT** | `01234ab` | +200 | 1 in ~9,000 | ~+0.022 | +1,900% | Five in a row |
+| **DOUBLE TRIPLE** | `aaabbb1` | +150 | 1 in ~2,000 | ~+0.075 | +1,400% | Two three of a kinds |
+| **FULL HOUSE** | `aaaabb1` | +100 | 1 in ~1,000 | ~+0.100 | +900% | Three and two of a kind |
+| **THREE PAIR** | `aabbcc1` | +150 | 1 in ~400 | ~+0.375 | +1,400% | Three consecutive pairs |
+| **THREE OF A KIND** | `aaa1234` | +50 | 1 in 133 | +0.376 | +400% | Three of a kind |
+| **TWO PAIR** | `aabb1cd` | +50 | 1 in ~30 | ~+1.667 | +400% | Two consecutive pairs |
+| **ALL NUMBERS** | `1230984` | +10 | 1 in 26.8 | +0.373 | 0% | Only numbers (break even) |
+| **NO WIN** | `abcd123` | -10 | ~35% | ~-3.5 | -200% | No pattern |
 
 ## Statistics & Probabilities
 
@@ -55,63 +61,38 @@ For the nerds who love the math:
 
 | Category | Percentage | Expected Value |
 |----------|------------|----------------|
-| **Total Win Rate** | ~50% | Break even |
-| **No Win Rate** | ~50% | -10 credits |
-| **Profit Rate** | ~47% | Positive return |
+| **Total Win Rate** | ~65% | Positive EV |
+| **No Win Rate** | ~35% | -10 credits |
+| **Profit Rate** | ~61% | Positive return |
 | **Break Even Rate** | ~3.7% | 0 net (all numbers) |
 
-### Pattern Frequency (per 1M commits)
+### Pattern Rarity Tiers
 
-| Pattern | Probability | Expected Value | ROI per Win |
-|---------|-------------|----------------|-------------|
-| JACKPOT | 1 in 16,777,216 | +0.0006 | +99,900% |
-| HEXTET | 1 in 159,784 | +0.031 | +49,900% |
-| LUCKY SEVEN | Very Rare | ~0.001 | +24,900% |
-| FULLEST HOUSE | 1 in 31,956 | +0.062 | +19,900% |
-| FIVE OF A KIND | 1 in 7,989 | +0.125 | +9,900% |
-| BIG STRAIGHT | Rare | ~0.018 | +4,900% |
-| FOUR OF A KIND | 1 in 799 | +0.501 | +3,900% |
-| ALL LETTERS | 1 in 959 | +0.312 | +2,900% |
-| STRAIGHT | Uncommon | ~0.112 | +1,900% |
-| DOUBLE TRIPLE | 1 in ~2,000 | ~0.075 | +1,400% |
-| FULL HOUSE | 1 in ~1,000 | ~0.100 | +900% |
-| THREE PAIR | 1 in 58 | +1.289 | +650% |
-| THREE OF A KIND | 1 in 133 | +0.376 | +400% |
-| TWO PAIR | 1 in 5.67 | +2.646 | +150% |
-| ALL NUMBERS | 1 in 26.8 | +0.000 | 0% |
-| **TOTAL EV** | - | **~10.0** | **~0%** |
+**Legendary (Once in a lifetime):**
+- JACKPOT, HEXTET, LUCKY SEVEN
 
-### House Edge
+**Epic (Very rare):**
+- FULLEST HOUSE, FIVE OF A KIND, BIG STRAIGHT
 
-- **Cost per play:** 10 credits
-- **Expected return:** ~10 credits
-- **House edge:** ~0% (balanced for fun!)
-- **Standard deviation:** High variance (big wins are rare but huge)
+**Rare (Uncommon):**
+- FOUR OF A KIND, ALL LETTERS, STRAIGHT
 
-### Rarest Patterns
+**Uncommon (Regular wins):**
+- DOUBLE TRIPLE, FULL HOUSE, THREE PAIR
 
-1. **JACKPOT** - Once every 16.7 million commits
-2. **HEXTET** - Once every 159,784 commits
-3. **LUCKY SEVEN** - Once every ~2.5 million commits (exact odds vary by hex sequence)
-
-### Most Common Patterns
-
-1. **TWO PAIR** - Every 5.67 commits (~17.6%)
-2. **THREE PAIR** - Every 58 commits (~1.7%)
-3. **ALL NUMBERS** - Every 26.8 commits (~3.7%)
+**Common (Frequent wins):**
+- THREE OF A KIND, TWO PAIR, ALL NUMBERS
 
 ### Expected Gameplay
 
 **If you make 100 commits, you can expect:**
-- ~50 losses (-500 credits)
-- ~18 two pairs (+450 credits)
-- ~4 all numbers (0 credits)
-- ~2 three of a kinds (+100 credits)
-- ~1 three pair (+75 credits)
-- ~1 four of a kind (+400 credits)
-- Occasional straights and other rarer patterns
+- ~35 no wins (-350 credits)
+- ~3 two pairs (+150 credits)
+- ~4 all numbers (+40 credits)
+- ~1 three of a kind (+50 credits)
+- Various rarer patterns adding up to roughly break even or slight positive
 
-**Net result:** Roughly break even with high variance!
+**Net result:** Slight positive expectation with high variance!
 
 ### Longest Expected Droughts
 
@@ -122,24 +103,67 @@ For the nerds who love the math:
 
 ### Fastest to Hit (statistically)
 
-- **TWO PAIR**: Should see one in your first 6 commits
+- **TWO PAIR**: Should see one in your first 30 commits
 - **ALL NUMBERS**: Should see one in your first 27 commits
-- **THREE PAIR**: Should see one in your first 58 commits
+- **THREE OF A KIND**: Should see one in your first 133 commits
 
 ### Commit Milestones
 
-- **10 commits**: Likely seen 1-2 two pairs
-- **100 commits**: Should have hit at least one three pair and possibly a four of a kind
-- **1,000 commits**: Decent chance of seeing a straight or all letters
+- **10 commits**: Likely seen some all numbers, maybe a two pair
+- **100 commits**: Should have hit at least one two pair and three of a kind
+- **1,000 commits**: Decent chance of seeing a four of a kind or straight
 - **10,000 commits**: Good shot at a fullest house or five of a kind
 - **100,000 commits**: Might see a hextet if you're lucky
 - **1,000,000 commits**: JACKPOT is still astronomically unlikely
 
-*Note: Actual probabilities may vary slightly based on specific hex character sequences and pattern detection order.*
+### House Edge
+
+- **Cost per play:** 10 credits
+- **Expected return:** ~10+ credits
+- **House edge:** Slight player advantage (balanced for fun!)
+- **Standard deviation:** High variance (big wins are rare but huge)
+
+## Pattern Detection Details
+
+### Consecutive Pairs
+TWO PAIR and THREE PAIR require consecutive identical characters:
+- `aabb1cd` = TWO PAIR ✓ (pairs are `aa` and `bb`)
+- `a1b2abc` = NO WIN ✗ (a's and b's are separated)
+
+### Straights
+Must be sequential hex values (can be ascending or descending):
+- `0123456` = LUCKY SEVEN ✓
+- `fedcba9` = LUCKY SEVEN ✓
+- `012abc3` = NO WIN ✗
+
+### Frequency Patterns
+Based on character counts:
+- Three of a kind beats scattered pairs
+- Full house beats three of a kind
+- Pattern priority is checked from rarest to most common
+
+*Note: Actual probabilities are approximate. Pattern detection checks in order of rarity, so higher-value patterns take precedence.*
 
 ## Development
 
 ```bash
 npm install
 npm run build
+npm test
 ```
+
+## Commands
+
+- `play <hash>` - Play with a specific 7-character hash
+- `spin` - Play with the current git commit hash
+- `test` - Play with a random hash (for testing)
+- `balance` - Show your current balance and stats
+- `init` - Install post-commit hook to play automatically
+
+## Options
+
+- `--small` or `-s` - Single-line animated mode (great for post-commit hooks)
+
+## Post-Commit Hook
+
+Run `git-slot-machine init` to install a post-commit hook that automatically plays the slot machine after each commit in small mode.
