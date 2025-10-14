@@ -5,6 +5,7 @@ import { playCommand } from './commands/play';
 import { spinCommand } from './commands/spin';
 import { initCommand } from './commands/init';
 import { balanceCommand } from './commands/balance';
+import { testCommand } from './commands/test';
 
 const program = new Command();
 
@@ -41,5 +42,14 @@ program
   .command('balance')
   .description('Show current repository balance and stats')
   .action(balanceCommand);
+
+program
+  .command('test')
+  .description('Play with a random 7-character hash')
+  .option('-q, --quiet', 'Single line output')
+  .option('-s, --small', 'Compact output')
+  .action(async (options: any) => {
+    await testCommand(options);
+  });
 
 program.parse();
