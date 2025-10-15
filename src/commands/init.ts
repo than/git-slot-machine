@@ -37,37 +37,50 @@ export async function initCommand(): Promise<void> {
 
   // Extract and save GitHub username from remote URL (do this first)
   const repoInfo = getRepoInfo();
-  if (repoInfo) {
-    const existingUsername = getGitHubUsername();
-    if (!existingUsername) {
-      setGitHubUsername(repoInfo.owner);
-      console.log(chalk.dim(`Detected GitHub username: ${repoInfo.owner}`));
-    }
 
-    // Check if repository is public
-    console.log(chalk.dim('Checking repository visibility...'));
-    const isPublic = await isRepoPublic(repoInfo.owner, repoInfo.name);
+  if (!repoInfo) {
+    console.log();
+    console.error(chalk.red('Error: No GitHub remote detected'));
+    console.log();
+    console.log(chalk.yellow('Git Slot Machine requires a public GitHub repository.'));
+    console.log();
+    console.log(chalk.dim('Add a GitHub remote to this repo:'));
+    console.log(chalk.cyan('  git remote add origin https://github.com/username/repo.git'));
+    console.log();
+    console.log(chalk.dim('This prevents farming points in private/local repos.'));
+    console.log(chalk.dim('Your commits must be publicly verifiable.'));
+    process.exit(1);
+  }
 
-    if (isPublic === false) {
-      console.log();
-      console.error(chalk.red('Error: Private repository detected'));
-      console.log();
-      console.log(chalk.yellow('Git Slot Machine only supports public repositories.'));
-      console.log();
-      console.log(chalk.dim('Why? Your commit hashes would be visible on the public'));
-      console.log(chalk.dim('leaderboard, which could expose information about your'));
-      console.log(chalk.dim('private repository.'));
-      console.log();
-      console.log(chalk.dim('Please use git-slot-machine with a public repository.'));
-      process.exit(1);
-    }
+  const existingUsername = getGitHubUsername();
+  if (!existingUsername) {
+    setGitHubUsername(repoInfo.owner);
+    console.log(chalk.dim(`Detected GitHub username: ${repoInfo.owner}`));
+  }
 
-    if (isPublic === null) {
-      console.log(chalk.yellow('⚠️  Could not verify repository visibility'));
-      console.log(chalk.dim('Proceeding with installation...'));
-    } else {
-      console.log(chalk.green('✓ Public repository confirmed'));
-    }
+  // Check if repository is public
+  console.log(chalk.dim('Checking repository visibility...'));
+  const isPublic = await isRepoPublic(repoInfo.owner, repoInfo.name);
+
+  if (isPublic === false) {
+    console.log();
+    console.error(chalk.red('Error: Private repository detected'));
+    console.log();
+    console.log(chalk.yellow('Git Slot Machine only supports public repositories.'));
+    console.log();
+    console.log(chalk.dim('Why? Your commit hashes would be visible on the public'));
+    console.log(chalk.dim('leaderboard, which could expose information about your'));
+    console.log(chalk.dim('private repository.'));
+    console.log();
+    console.log(chalk.dim('Please use git-slot-machine with a public repository.'));
+    process.exit(1);
+  }
+
+  if (isPublic === null) {
+    console.log(chalk.yellow('⚠️  Could not verify repository visibility'));
+    console.log(chalk.dim('Proceeding with installation...'));
+  } else {
+    console.log(chalk.green('✓ Public repository confirmed'));
   }
 
   const hookPath = path.join(process.cwd(), '.git', 'hooks', 'post-commit');

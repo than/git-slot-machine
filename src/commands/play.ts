@@ -62,12 +62,23 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
       console.log(' '.repeat(descPadding) + chalk.dim(descText));
     }
 
+    // Validate GitHub remote for API sync
+    const repoInfo = getRepoInfo();
+    const githubUsername = getGitHubUsername();
+
+    if (!repoInfo && githubUsername) {
+      console.log();
+      console.log(chalk.yellow.bold('⚠ Warning: No GitHub remote detected'));
+      console.log(chalk.dim('This repo will not sync to the leaderboard.'));
+      console.log(chalk.dim('To sync, add a GitHub remote:'));
+      console.log(chalk.cyan('  git remote add origin https://github.com/username/repo.git'));
+      console.log();
+    }
+
     // Update balance locally
     let newBalance = updateBalance(hash.toLowerCase(), result.payout);
 
     // Send to API and sync balance with server
-    const repoInfo = getRepoInfo();
-    const githubUsername = getGitHubUsername();
     let shareUrl: string | undefined;
 
     if (repoInfo && githubUsername) {
