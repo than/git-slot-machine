@@ -14,10 +14,10 @@ export function balanceCommand(): void {
     console.log();
     console.log(chalk.cyan.bold('Repository Stats'));
     console.log(chalk.dim('━'.repeat(40)));
-    console.log(chalk.white(`Balance:        ${stats.balance >= 0 ? chalk.green(stats.balance) : chalk.red(stats.balance)} credits`));
+    console.log(chalk.white(`Balance:        ${stats.balance >= 0 ? chalk.green(stats.balance) : chalk.red(stats.balance)} points`));
     console.log(chalk.white(`Total Commits:  ${stats.totalCommits}`));
-    console.log(chalk.white(`Total Winnings: ${chalk.yellow(stats.totalWinnings)} credits`));
-    console.log(chalk.white(`Biggest Win:    ${chalk.yellow(stats.biggestWin)} credits`));
+    console.log(chalk.white(`Total Winnings: ${chalk.yellow(stats.totalWinnings)} points`));
+    console.log(chalk.white(`Biggest Win:    ${chalk.yellow(stats.biggestWin)} points`));
     console.log(chalk.white(`Last Commit:    ${chalk.dim(stats.lastCommit)}`));
     console.log();
 

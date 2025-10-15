@@ -18,10 +18,10 @@ export async function syncCommand(): Promise<void> {
 
     console.log();
     console.log(chalk.bold('Local Balance:'));
-    console.log(`  Balance: ${chalk.green(localBalance)} credits`);
+    console.log(`  Balance: ${chalk.green(localBalance)} points`);
     console.log();
     console.log(chalk.bold('API Balance:'));
-    console.log(`  Balance: ${chalk.green(apiBalance.balance)} credits`);
+    console.log(`  Balance: ${chalk.green(apiBalance.balance)} points`);
     console.log(`  Total Commits: ${chalk.cyan(apiBalance.total_commits)}`);
     console.log(`  Total Winnings: ${chalk.cyan(apiBalance.total_winnings)}`);
     console.log(`  Biggest Win: ${chalk.cyan(apiBalance.biggest_win)}`);

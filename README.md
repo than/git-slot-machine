@@ -32,7 +32,7 @@ git-slot-machine test
 
 ## Winning Patterns & Payouts
 
-Every commit costs **10 credits**. You start with **100 credits**.
+Every commit costs **10 points**. You start with **100 points**.
 
 | Pattern | Example | Payout | Probability | Expected Value | ROI per Win | Description |
 |---------|---------|--------|-------------|----------------|-------------|-------------|
@@ -62,7 +62,7 @@ For the nerds who love the math:
 | Category | Percentage | Expected Value |
 |----------|------------|----------------|
 | **Total Win Rate** | ~65% | Positive EV |
-| **No Win Rate** | ~35% | -10 credits |
+| **No Win Rate** | ~35% | -10 points |
 | **Profit Rate** | ~61% | Positive return |
 | **Break Even Rate** | ~3.7% | 0 net (all numbers) |
 
@@ -86,10 +86,10 @@ For the nerds who love the math:
 ### Expected Gameplay
 
 **If you make 100 commits, you can expect:**
-- ~35 no wins (-350 credits)
-- ~3 two pairs (+150 credits)
-- ~4 all numbers (+40 credits)
-- ~1 three of a kind (+50 credits)
+- ~35 no wins (-350 points)
+- ~3 two pairs (+150 points)
+- ~4 all numbers (+40 points)
+- ~1 three of a kind (+50 points)
 - Various rarer patterns adding up to roughly break even or slight positive
 
 **Net result:** Slight positive expectation with high variance!
@@ -118,8 +118,8 @@ For the nerds who love the math:
 
 ### House Edge
 
-- **Cost per play:** 10 credits
-- **Expected return:** ~10+ credits
+- **Cost per play:** 10 points
+- **Expected return:** ~10+ points
 - **House edge:** Slight player advantage (balanced for fun!)
 - **Standard deviation:** High variance (big wins are rare but huge)
 
