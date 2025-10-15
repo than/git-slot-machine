@@ -5,7 +5,29 @@ import { isGitRepo } from '../utils/git';
 import { POST_COMMIT_HOOK } from '../templates/post-commit';
 import { getRepoInfo, setGitHubUsername, getGitHubUsername } from '../config';
 
-export function initCommand(): void {
+async function isRepoPublic(owner: string, repo: string): Promise<boolean | null> {
+  try {
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      headers: {
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json() as { private: boolean };
+      return data.private === false;
+    }
+
+    // 404 could mean private or doesn't exist
+    return null;
+  } catch (error) {
+    // Network error or API unavailable
+    return null;
+  }
+}
+
+export async function initCommand(): Promise<void> {
   // Check if git repo
   if (!isGitRepo()) {
     console.error(chalk.red('Error: Not a git repository'));
@@ -20,6 +42,33 @@ export function initCommand(): void {
     if (!existingUsername) {
       setGitHubUsername(repoInfo.owner);
       console.log(chalk.dim(`Detected GitHub username: ${repoInfo.owner}`));
+    }
+
+    // Check if repository is public
+    console.log(chalk.dim('Checking repository visibility...'));
+    const isPublic = await isRepoPublic(repoInfo.owner, repoInfo.name);
+
+    if (isPublic === false) {
+      console.log();
+      console.error(chalk.red('Error: Private repository detected'));
+      console.log();
+      console.log(chalk.yellow('Git Slot Machine only supports public repositories.'));
+      console.log();
+      console.log(chalk.dim('Why? Your commit hashes would be visible on the public'));
+      console.log(chalk.dim('leaderboard, which could expose information about your'));
+      console.log(chalk.dim('private repository.'));
+      console.log();
+      console.log(chalk.dim('To use git-slot-machine:'));
+      console.log(chalk.dim('  • Make this repository public, or'));
+      console.log(chalk.dim('  • Use it with a different public repository'));
+      process.exit(1);
+    }
+
+    if (isPublic === null) {
+      console.log(chalk.yellow('⚠️  Could not verify repository visibility'));
+      console.log(chalk.dim('Proceeding with installation...'));
+    } else {
+      console.log(chalk.green('✓ Public repository confirmed'));
     }
   }
 

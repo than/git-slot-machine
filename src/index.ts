@@ -37,7 +37,9 @@ program
 program
   .command('init')
   .description('Install post-commit hook in current repository')
-  .action(initCommand);
+  .action(async () => {
+    await initCommand();
+  });
 
 program
   .command('balance')
