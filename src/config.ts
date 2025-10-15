@@ -8,6 +8,7 @@ interface Config {
   apiUrl?: string;
   apiToken?: string;
   syncEnabled?: boolean;
+  privateRepo?: boolean;
 }
 
 // Get repo-specific config path
@@ -130,6 +131,17 @@ export function setSyncEnabled(enabled: boolean): void {
   saveGlobalConfig(config);
 }
 
+export function isPrivateRepo(): boolean {
+  const config = getRepoConfig();
+  return config.privateRepo === true;
+}
+
+export function setPrivateRepo(isPrivate: boolean): void {
+  const config = getRepoConfig();
+  config.privateRepo = isPrivate;
+  saveRepoConfig(config);
+}
+
 export function getRepoInfo(): { owner: string; name: string; url: string } | null {
   try {
     const remoteUrl = execSync('git config --get remote.origin.url', { encoding: 'utf-8' }).trim();
@@ -140,6 +152,16 @@ export function getRepoInfo(): { owner: string; name: string; url: string } | nu
     if (match) {
       const owner = match[1];
       const name = match[2];
+
+      // If privacy mode is enabled, return obfuscated info
+      if (isPrivateRepo()) {
+        return {
+          owner: 'private',
+          name: 'private',
+          url: 'private',
+        };
+      }
+
       return {
         owner,
         name,

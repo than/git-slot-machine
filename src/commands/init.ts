@@ -1,9 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as readline from 'readline';
 import chalk from 'chalk';
 import { isGitRepo } from '../utils/git';
 import { POST_COMMIT_HOOK } from '../templates/post-commit';
-import { getRepoInfo, setGitHubUsername, getGitHubUsername } from '../config';
+import { getRepoInfo, setGitHubUsername, getGitHubUsername, setPrivateRepo } from '../config';
 
 async function isRepoPublic(owner: string, repo: string): Promise<boolean | null> {
   try {
@@ -27,6 +28,20 @@ async function isRepoPublic(owner: string, repo: string): Promise<boolean | null
   }
 }
 
+function askQuestion(question: string): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.trim().toLowerCase());
+    });
+  });
+}
+
 export async function initCommand(): Promise<void> {
   // Check if git repo
   if (!isGitRepo()) {
@@ -42,13 +57,11 @@ export async function initCommand(): Promise<void> {
     console.log();
     console.error(chalk.red('Error: No GitHub remote detected'));
     console.log();
-    console.log(chalk.yellow('Git Slot Machine requires a public GitHub repository.'));
+    console.log(chalk.yellow('Git Slot Machine requires a GitHub repository.'));
     console.log();
     console.log(chalk.dim('Add a GitHub remote to this repo:'));
     console.log(chalk.cyan('  git remote add origin https://github.com/username/repo.git'));
     console.log();
-    console.log(chalk.dim('This prevents farming points in private/local repos.'));
-    console.log(chalk.dim('Your commits must be publicly verifiable.'));
     process.exit(1);
   }
 
@@ -62,23 +75,49 @@ export async function initCommand(): Promise<void> {
   console.log(chalk.dim('Checking repository visibility...'));
   const isPublic = await isRepoPublic(repoInfo.owner, repoInfo.name);
 
-  if (isPublic === false) {
-    console.log();
-    console.error(chalk.red('Error: Private repository detected'));
-    console.log();
-    console.log(chalk.yellow('Git Slot Machine only supports public repositories.'));
-    console.log();
-    console.log(chalk.dim('Why? Your commit hashes would be visible on the public'));
-    console.log(chalk.dim('leaderboard, which could expose information about your'));
-    console.log(chalk.dim('private repository.'));
-    console.log();
-    console.log(chalk.dim('Please use git-slot-machine with a public repository.'));
-    process.exit(1);
-  }
+  let usePrivacyMode = false;
 
-  if (isPublic === null) {
+  if (isPublic === false) {
+    console.log(chalk.yellow('⚠️  Private repository detected'));
+    console.log();
+    console.log(chalk.cyan('Privacy Mode Available'));
+    console.log(chalk.dim('You can still use Git Slot Machine with privacy mode enabled.'));
+    console.log();
+    console.log(chalk.yellow('What happens in privacy mode:'));
+    console.log(chalk.dim('  • Repository name/org are NOT stored on the server'));
+    console.log(chalk.dim('  • Sent as "private/private" to the API'));
+    console.log(chalk.dim('  • Displayed as "*******/*******" on leaderboard'));
+    console.log(chalk.dim('  • Your GitHub username is still public'));
+    console.log(chalk.dim('  • All private repos share one balance'));
+    console.log();
+
+    const answer = await askQuestion(chalk.green('Enable privacy mode? (y/n): '));
+
+    if (answer === 'y' || answer === 'yes') {
+      usePrivacyMode = true;
+      setPrivateRepo(true);
+      console.log(chalk.green('✓ Privacy mode enabled'));
+      console.log(chalk.dim('Repository details will never be sent to the server.'));
+    } else {
+      console.log();
+      console.log(chalk.red('Cannot proceed without privacy mode for private repos.'));
+      console.log(chalk.dim('Please make the repository public or enable privacy mode.'));
+      process.exit(1);
+    }
+  } else if (isPublic === null) {
     console.log(chalk.yellow('⚠️  Could not verify repository visibility'));
-    console.log(chalk.dim('Proceeding with installation...'));
+    console.log();
+
+    const answer = await askQuestion(chalk.green('Is this a private repository? (y/n): '));
+
+    if (answer === 'y' || answer === 'yes') {
+      usePrivacyMode = true;
+      setPrivateRepo(true);
+      console.log(chalk.green('✓ Privacy mode enabled'));
+      console.log(chalk.dim('Repository details will never be sent to the server.'));
+    } else {
+      console.log(chalk.dim('Proceeding with public repository mode...'));
+    }
   } else {
     console.log(chalk.green('✓ Public repository confirmed'));
   }
