@@ -1,10 +1,18 @@
 {
-  "name": "git-slot-machine",
-  "version": "0.1.0",
-  "description": "Git commit slot machine with animated ASCII output",
+  "name": "@git-slot-machine/cli",
+  "version": "1.0.0",
+  "description": "Turn your git commits into a slot machine game! CLI tool with global leaderboards and win streaks.",
   "main": "dist/index.js",
   "bin": {
     "git-slot-machine": "./dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/than/git-slot-machine.git"
+  },
+  "homepage": "https://gitslotmachine.com",
+  "bugs": {
+    "url": "https://github.com/than/git-slot-machine/issues"
   },
   "scripts": {
     "build": "tsc",
@@ -16,10 +24,18 @@
     "git",
     "slot-machine",
     "cli",
-    "fun"
+    "fun",
+    "game",
+    "commit",
+    "leaderboard",
+    "poker",
+    "gamification"
   ],
-  "author": "Than Tibbetts",
+  "author": "Than Tibbetts <https://github.com/than>",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
