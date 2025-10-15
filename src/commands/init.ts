@@ -3,6 +3,7 @@ import * as path from 'path';
 import chalk from 'chalk';
 import { isGitRepo } from '../utils/git';
 import { POST_COMMIT_HOOK } from '../templates/post-commit';
+import { getRepoInfo, setGitHubUsername, getGitHubUsername } from '../config';
 
 export function initCommand(): void {
   // Check if git repo
@@ -10,6 +11,16 @@ export function initCommand(): void {
     console.error(chalk.red('Error: Not a git repository'));
     console.log(chalk.dim('Run this command from the root of a git repository'));
     process.exit(1);
+  }
+
+  // Extract and save GitHub username from remote URL (do this first)
+  const repoInfo = getRepoInfo();
+  if (repoInfo) {
+    const existingUsername = getGitHubUsername();
+    if (!existingUsername) {
+      setGitHubUsername(repoInfo.owner);
+      console.log(chalk.dim(`Detected GitHub username: ${repoInfo.owner}`));
+    }
   }
 
   const hookPath = path.join(process.cwd(), '.git', 'hooks', 'post-commit');
@@ -35,4 +46,16 @@ export function initCommand(): void {
   console.log();
   console.log('Try it out:');
   console.log(chalk.dim('  git commit --allow-empty -m "test"'));
+  console.log();
+  console.log(chalk.cyan('Optional: Sync with the API'));
+  console.log(chalk.dim(`  git-slot-machine auth login ${repoInfo?.owner || 'your-github-username'}`));
+  console.log();
+  console.log(chalk.yellow('What gets sent to the server:'));
+  console.log(chalk.dim('  • Commit hash (7 and 40 character versions)'));
+  console.log(chalk.dim('  • Repository URL, owner, and name'));
+  console.log(chalk.dim('  • GitHub username'));
+  console.log(chalk.dim('  • Pattern type, payout, and balance'));
+  console.log();
+  console.log(chalk.dim('You can disable API sync anytime:'));
+  console.log(chalk.dim('  git-slot-machine config set sync-enabled false'));
 }

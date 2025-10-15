@@ -6,6 +6,9 @@ import { spinCommand } from './commands/spin';
 import { initCommand } from './commands/init';
 import { balanceCommand } from './commands/balance';
 import { testCommand } from './commands/test';
+import { authLoginCommand, authLogoutCommand, authStatusCommand } from './commands/auth';
+import { syncCommand } from './commands/sync';
+import { configGetCommand, configSetCommand } from './commands/config';
 
 const program = new Command();
 
@@ -47,6 +50,63 @@ program
   .option('-s, --small', 'Single line output')
   .action(async (options: any) => {
     await testCommand(options);
+  });
+
+// Auth commands
+const auth = program
+  .command('auth')
+  .description('Manage API authentication');
+
+auth
+  .command('login')
+  .description('Login with GitHub username')
+  .argument('<github-username>', 'Your GitHub username')
+  .action(async (githubUsername: string) => {
+    await authLoginCommand(githubUsername);
+  });
+
+auth
+  .command('logout')
+  .description('Logout and clear API token')
+  .action(async () => {
+    await authLogoutCommand();
+  });
+
+auth
+  .command('status')
+  .description('Show authentication status')
+  .action(async () => {
+    await authStatusCommand();
+  });
+
+// Sync command
+program
+  .command('sync')
+  .description('Sync balance with API')
+  .action(async () => {
+    await syncCommand();
+  });
+
+// Config commands
+const config = program
+  .command('config')
+  .description('Manage CLI configuration');
+
+config
+  .command('get')
+  .description('Get configuration value')
+  .argument('<key>', 'Configuration key (api-url, sync-enabled, all)')
+  .action(async (key: string) => {
+    await configGetCommand(key);
+  });
+
+config
+  .command('set')
+  .description('Set configuration value')
+  .argument('<key>', 'Configuration key (api-url, sync-enabled)')
+  .argument('<value>', 'Configuration value')
+  .action(async (key: string, value: string) => {
+    await configSetCommand(key, value);
   });
 
 program.parse();

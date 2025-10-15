@@ -1,14 +1,20 @@
 import { detectPattern } from '../patterns';
 import { animateSlotMachine, animateSmallMode } from '../animation/slotMachine';
-import { updateBalance } from '../balance';
+import { getBalance, updateBalance } from '../balance';
+import { sendPlayToAPI } from '../api';
+import { getRepoInfo, getGitHubUsername } from '../config';
 import chalk from 'chalk';
 
 interface PlayOptions {
   small?: boolean;
+  fullHash?: string;  // Optional full hash for CLI integration
 }
 
 export async function playCommand(hash: string, options: PlayOptions): Promise<void> {
   try {
+    // Get balance before playing
+    const balanceBefore = getBalance();
+
     // Detect pattern
     const result = detectPattern(hash);
 
@@ -58,6 +64,35 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
 
     // Update balance
     const newBalance = updateBalance(hash.toLowerCase(), result.payout);
+
+    // Send to API in the background (don't block)
+    const repoInfo = getRepoInfo();
+    const githubUsername = getGitHubUsername();
+
+    if (repoInfo && githubUsername) {
+      const playData: any = {
+        commit_hash: hash.toLowerCase(),
+        pattern_type: result.type,
+        pattern_name: result.name,
+        payout: result.payout,
+        wager: 10,
+        balance_before: balanceBefore,
+        balance_after: newBalance,
+        repo_url: repoInfo.url,
+        github_username: githubUsername,
+        repo_owner: repoInfo.owner,
+        repo_name: repoInfo.name,
+      };
+
+      // Only send full hash if we have one (not in test mode)
+      if (options.fullHash && options.fullHash.length === 40) {
+        playData.commit_full_hash = options.fullHash;
+      }
+
+      sendPlayToAPI(playData).catch(() => {
+        // Silently fail - local play already succeeded
+      });
+    }
 
     // Show result and balance
     if (options.small) {
