@@ -68,6 +68,7 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
     // Send to API and sync balance with server
     const repoInfo = getRepoInfo();
     const githubUsername = getGitHubUsername();
+    let shareUrl: string | undefined;
 
     if (repoInfo && githubUsername) {
       const playData: any = {
@@ -95,6 +96,7 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
         if (apiResponse && apiResponse.balance !== undefined) {
           setBalance(apiResponse.balance);
           newBalance = apiResponse.balance;
+          shareUrl = apiResponse.share_url;
         }
       } catch (error) {
         // Silently fail - local play already succeeded
@@ -116,6 +118,18 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
       const balanceText = `Balance: ${newBalance} points`;
       const balancePadding = Math.floor((boxWidth - balanceText.length) / 2);
       console.log(' '.repeat(balancePadding) + chalk.white.bold(`Balance: ${newBalance >= 0 ? chalk.green.bold(newBalance) : chalk.red.bold(newBalance)} points`));
+    }
+
+    // Show share URL for wins
+    if (shareUrl && result.payout > 0 && !options.small) {
+      console.log();
+      const boxWidth = 41;
+      const shareText = 'Share your win:';
+      const sharePadding = Math.floor((boxWidth - shareText.length) / 2);
+      console.log(' '.repeat(sharePadding) + chalk.dim(shareText));
+
+      const urlPadding = Math.floor((boxWidth - shareUrl.length) / 2);
+      console.log(' '.repeat(urlPadding) + chalk.green.underline(shareUrl));
     }
 
   } catch (error) {

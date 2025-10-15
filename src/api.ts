@@ -54,6 +54,7 @@ export interface PlayResponse {
   balance: number;
   payout: number;
   pattern_name: string;
+  share_url?: string;
 }
 
 // Send play data to API
