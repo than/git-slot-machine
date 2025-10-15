@@ -1,6 +1,6 @@
 {
   "name": "git-slot-machine",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Turn your git commits into a slot machine game! CLI tool with global leaderboards and win streaks.",
   "main": "dist/index.js",
   "bin": {
