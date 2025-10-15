@@ -1,6 +1,45 @@
-# git-slot-machine
+# 🎰 Git Slot Machine
 
-Git commit hash slot machine with animated ASCII output.
+**Turn every git commit into a slot machine pull!**
+
+A fun CLI tool that analyzes your commit hashes and rewards you based on patterns found in the first 7 hex characters. Automatically plays after each commit via a post-commit hook, syncs with a global leaderboard, and tracks your stats across all your repos.
+
+🎰 **Live Leaderboard:** [gitslotmachine.com](https://gitslotmachine.com)
+🔧 **Backend API:** [GitHub](https://github.com/than/gitslotmachine.com)
+
+---
+
+## Quick Start
+
+```bash
+# Install globally
+npm install -g git-slot-machine
+
+# Authenticate with your GitHub username
+git-slot-machine auth login
+
+# Install post-commit hook in your repo
+cd your-repo
+git-slot-machine init
+
+# Make a commit and watch the magic happen!
+git commit -m "feat: add new feature"
+# 🎰 aa1bb2c • TWO PAIR +50 • Balance: 150
+```
+
+---
+
+## Features
+
+✅ **Automatic gameplay** - Plays after every commit via post-commit hook
+✅ **Global sync** - Balance and stats sync across all your repos
+✅ **Leaderboards** - Daily and all-time rankings at gitslotmachine.com
+✅ **Win streaks** - Track consecutive wins with detailed history
+✅ **Shareable wins** - Get a unique URL for your big wins
+✅ **Offline mode** - Works without internet, syncs when available
+✅ **Multiple modes** - Animated slot machine or compact single-line output
+
+---
 
 ## Installation
 
@@ -8,27 +47,66 @@ Git commit hash slot machine with animated ASCII output.
 npm install -g git-slot-machine
 ```
 
-## Usage
+---
+
+## Commands
+
+### Authentication
 
 ```bash
-# Play with a specific hash
+# Login with your GitHub username
+git-slot-machine auth login
+
+# Check authentication status
+git-slot-machine auth status
+
+# Logout
+git-slot-machine auth logout
+```
+
+### Gameplay
+
+```bash
+# Play with a specific 7-character hash
 git-slot-machine play <hash>
 
 # Play with current commit
 git-slot-machine spin
 
-# Play with current commit (single-line animated mode)
+# Play with current commit (compact mode)
 git-slot-machine spin --small
-
-# Install post-commit hook
-git-slot-machine init
-
-# Check your balance
-git-slot-machine balance
 
 # Test with a random hash
 git-slot-machine test
 ```
+
+### Setup
+
+```bash
+# Install post-commit hook in current repo
+git-slot-machine init
+
+# Check your balance and stats
+git-slot-machine balance
+
+# Sync local balance with server
+git-slot-machine sync
+```
+
+### Configuration
+
+```bash
+# View current configuration
+git-slot-machine config list
+
+# Set API URL (default: Laravel Cloud)
+git-slot-machine config set api-url https://api.gitslotmachine.com/api
+
+# Enable/disable automatic syncing
+git-slot-machine config set sync-enabled true
+```
+
+---
 
 ## Winning Patterns & Payouts
 
@@ -144,26 +222,92 @@ Based on character counts:
 
 *Note: Actual probabilities are approximate. Pattern detection checks in order of rarity, so higher-value patterns take precedence.*
 
+## How It Works
+
+1. **Install the hook**: `git-slot-machine init` adds a post-commit hook to your repo
+2. **Make commits**: Every time you commit, the hook runs automatically
+3. **Get results**: See your pattern, payout, and updated balance immediately
+4. **Sync globally**: Your plays sync to gitslotmachine.com (if authenticated)
+5. **Compete**: Climb the leaderboards and build win streaks!
+
+### Privacy & Data
+
+The CLI sends the following data to the server when authenticated:
+- Commit hash (first 7 chars + full hash)
+- Repository information (URL, owner, name)
+- GitHub username
+- Pattern detected and payout
+
+Your balance is tracked both locally and on the server. You can disable syncing anytime:
+```bash
+git-slot-machine config set sync-enabled false
+```
+
+---
+
 ## Development
 
+### Setup
+
 ```bash
+# Clone the repo
+git clone https://github.com/than/git-slot-machine.git
+cd git-slot-machine
+
+# Install dependencies
 npm install
+
+# Build TypeScript
 npm run build
+
+# Link for local testing
+npm link
+
+# Run tests (if available)
 npm test
 ```
 
-## Commands
+### Project Structure
 
-- `play <hash>` - Play with a specific 7-character hash
-- `spin` - Play with the current git commit hash
-- `test` - Play with a random hash (for testing)
-- `balance` - Show your current balance and stats
-- `init` - Install post-commit hook to play automatically
+```
+src/
+├── api.ts          # API client with fallback domains
+├── balance.ts      # Local balance management
+├── commands/       # CLI command implementations
+│   ├── auth.ts     # Authentication commands
+│   ├── config.ts   # Configuration commands
+│   ├── init.ts     # Post-commit hook setup
+│   ├── play.ts     # Play with specific hash
+│   ├── spin.ts     # Play with current commit
+│   └── sync.ts     # Balance sync
+├── config.ts       # Configuration file management
+├── index.ts        # CLI entry point
+├── patterns.ts     # Pattern detection logic
+└── utils/
+    └── git.ts      # Git operations
 
-## Options
+dist/               # Compiled JavaScript
+```
 
-- `--small` or `-s` - Single-line animated mode (great for post-commit hooks)
+---
 
-## Post-Commit Hook
+## Contributing
 
-Run `git-slot-machine init` to install a post-commit hook that automatically plays the slot machine after each commit in small mode.
+Contributions welcome! Please feel free to:
+- Open issues for bugs or feature requests
+- Submit pull requests
+- Share your biggest wins!
+
+---
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details
+
+---
+
+## Credits
+
+Built by [Than Tibbetts](https://github.com/than)
+
+Powered by Node.js, TypeScript, and chalk
