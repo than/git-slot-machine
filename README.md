@@ -1,5 +1,7 @@
 # 🎰 Git Slot Machine
 
+[![Git Slot Machine](https://gitslotmachine.com/badge/than/git-slot-machine.svg)](https://gitslotmachine.com)
+
 [![npm version](https://img.shields.io/npm/v/git-slot-machine.svg)](https://www.npmjs.com/package/git-slot-machine)
 [![npm downloads](https://img.shields.io/npm/dt/git-slot-machine.svg)](https://www.npmjs.com/package/git-slot-machine)
 [![license](https://img.shields.io/npm/l/git-slot-machine.svg)](https://github.com/than/git-slot-machine/blob/main/LICENSE)
