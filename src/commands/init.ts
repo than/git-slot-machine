@@ -58,9 +58,7 @@ export async function initCommand(): Promise<void> {
       console.log(chalk.dim('leaderboard, which could expose information about your'));
       console.log(chalk.dim('private repository.'));
       console.log();
-      console.log(chalk.dim('To use git-slot-machine:'));
-      console.log(chalk.dim('  • Make this repository public, or'));
-      console.log(chalk.dim('  • Use it with a different public repository'));
+      console.log(chalk.dim('Please use git-slot-machine with a public repository.'));
       process.exit(1);
     }
 
