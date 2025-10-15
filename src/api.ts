@@ -1,5 +1,11 @@
 import { getApiUrl, getApiToken, isSyncEnabled } from './config';
 
+// Fallback domains to try in order
+const FALLBACK_DOMAINS = [
+  'https://api.gitslotmachine.com',
+  'https://gitslotmachinecom-main-vilmm1.laravel.cloud',
+];
+
 export interface PlayData {
   commit_hash: string;
   commit_full_hash: string;
@@ -57,6 +63,36 @@ export interface PlayResponse {
   share_url?: string;
 }
 
+// Helper to try API call with fallback domains
+async function fetchWithFallback(endpoint: string, options: RequestInit): Promise<Response | null> {
+  const configuredUrl = getApiUrl();
+
+  // Build list of URLs to try: configured URL first, then fallbacks (excluding duplicates)
+  const urlsToTry = [
+    configuredUrl,
+    ...FALLBACK_DOMAINS.filter(domain => !configuredUrl.startsWith(domain))
+  ];
+
+  for (const baseUrl of urlsToTry) {
+    try {
+      const url = `${baseUrl.replace(/\/api$/, '')}/api${endpoint}`;
+      const response = await fetch(url, options);
+
+      if (response.ok) {
+        return response;
+      }
+
+      // If not ok, try next domain
+      continue;
+    } catch (error) {
+      // Network error, try next domain
+      continue;
+    }
+  }
+
+  return null;
+}
+
 // Send play data to API
 export async function sendPlayToAPI(data: PlayData): Promise<PlayResponse | null> {
   if (!isApiAvailable()) {
@@ -64,16 +100,13 @@ export async function sendPlayToAPI(data: PlayData): Promise<PlayResponse | null
   }
 
   try {
-    const apiUrl = getApiUrl();
-    const response = await fetch(`${apiUrl}/play`, {
+    const response = await fetchWithFallback('/play', {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error(`API Error (${response.status}):`, error);
+    if (!response) {
       return null;
     }
 
@@ -93,13 +126,12 @@ export async function getBalance(): Promise<BalanceResponse | null> {
   }
 
   try {
-    const apiUrl = getApiUrl();
-    const response = await fetch(`${apiUrl}/balance`, {
+    const response = await fetchWithFallback('/balance', {
       method: 'GET',
       headers: getHeaders(),
     });
 
-    if (!response.ok) {
+    if (!response) {
       return null;
     }
 
@@ -113,8 +145,7 @@ export async function getBalance(): Promise<BalanceResponse | null> {
 // Create API token (simplified - just pass github username)
 export async function createToken(githubUsername: string): Promise<string | null> {
   try {
-    const apiUrl = getApiUrl();
-    const response = await fetch(`${apiUrl}/auth/token`, {
+    const response = await fetchWithFallback('/auth/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -125,7 +156,7 @@ export async function createToken(githubUsername: string): Promise<string | null
       }),
     });
 
-    if (!response.ok) {
+    if (!response) {
       return null;
     }
 
@@ -139,8 +170,7 @@ export async function createToken(githubUsername: string): Promise<string | null
 // Verify token is valid
 export async function verifyToken(token: string): Promise<boolean> {
   try {
-    const apiUrl = getApiUrl();
-    const response = await fetch(`${apiUrl}/auth/user`, {
+    const response = await fetchWithFallback('/auth/user', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -149,7 +179,7 @@ export async function verifyToken(token: string): Promise<boolean> {
       },
     });
 
-    return response.ok;
+    return response !== null && response.ok;
   } catch (error) {
     return false;
   }
@@ -162,13 +192,12 @@ export async function logout(): Promise<boolean> {
   }
 
   try {
-    const apiUrl = getApiUrl();
-    const response = await fetch(`${apiUrl}/auth/token`, {
+    const response = await fetchWithFallback('/auth/token', {
       method: 'DELETE',
       headers: getHeaders(),
     });
 
-    return response.ok;
+    return response !== null && response.ok;
   } catch (error) {
     return false;
   }
