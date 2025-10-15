@@ -1,5 +1,10 @@
 # 🎰 Git Slot Machine
 
+[![npm version](https://img.shields.io/npm/v/git-slot-machine.svg)](https://www.npmjs.com/package/git-slot-machine)
+[![npm downloads](https://img.shields.io/npm/dt/git-slot-machine.svg)](https://www.npmjs.com/package/git-slot-machine)
+[![license](https://img.shields.io/npm/l/git-slot-machine.svg)](https://github.com/than/git-slot-machine/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/than/git-slot-machine.svg)](https://github.com/than/git-slot-machine/stargazers)
+
 **Turn every git commit into a slot machine pull!**
 
 A fun CLI tool that analyzes your commit hashes and rewards you based on patterns found in the first 7 hex characters. Automatically plays after each commit via a post-commit hook, syncs with a global leaderboard, and tracks your stats across all your repos.
