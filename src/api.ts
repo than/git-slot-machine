@@ -26,6 +26,8 @@ export interface BalanceResponse {
   total_commits: number;
   total_winnings: number;
   biggest_win: number;
+  biggest_win_pattern?: string;
+  biggest_win_hash?: string;
 }
 
 // Helper to build headers with authentication

@@ -24,7 +24,16 @@ export async function syncCommand(): Promise<void> {
     console.log(`  Balance: ${chalk.green(apiBalance.balance)} points`);
     console.log(`  Total Commits: ${chalk.cyan(apiBalance.total_commits)}`);
     console.log(`  Total Winnings: ${chalk.cyan(apiBalance.total_winnings)}`);
-    console.log(`  Biggest Win: ${chalk.cyan(apiBalance.biggest_win)}`);
+
+    // Show biggest win with pattern and hash
+    if (apiBalance.biggest_win > 0) {
+      const winText = `${chalk.cyan(apiBalance.biggest_win)} points`;
+      const patternText = apiBalance.biggest_win_pattern ? ` (${chalk.yellow(apiBalance.biggest_win_pattern)})` : '';
+      const hashText = apiBalance.biggest_win_hash ? chalk.dim(` - ${apiBalance.biggest_win_hash}`) : '';
+      console.log(`  Biggest Win: ${winText}${patternText}${hashText}`);
+    } else {
+      console.log(`  Biggest Win: ${chalk.cyan(apiBalance.biggest_win)}`);
+    }
     console.log();
 
     if (localBalance !== apiBalance.balance) {
