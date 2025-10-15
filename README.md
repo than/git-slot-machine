@@ -47,9 +47,9 @@ Every commit costs **10 points**. You start with **100 points**.
 | **STRAIGHT** | `01234ab` | +200 | 1 in ~9,000 | ~+0.022 | +1,900% | Five in a row |
 | **DOUBLE TRIPLE** | `aaabbb1` | +150 | 1 in ~2,000 | ~+0.075 | +1,400% | Two three of a kinds |
 | **FULL HOUSE** | `aaaabb1` | +100 | 1 in ~1,000 | ~+0.100 | +900% | Three and two of a kind |
-| **THREE PAIR** | `aabbcc1` | +150 | 1 in ~400 | ~+0.375 | +1,400% | Three consecutive pairs |
-| **THREE OF A KIND** | `aaa1234` | +50 | 1 in 133 | +0.376 | +400% | Three of a kind |
-| **TWO PAIR** | `aabb1cd` | +50 | 1 in ~30 | ~+1.667 | +400% | Two consecutive pairs |
+| **THREE PAIR** | `aabbcc1` | +150 | 1 in ~1,600 | ~+0.094 | +1,400% | Three consecutive pairs |
+| **THREE OF A KIND** | `aaa1234` | +50 | 1 in 15 | +3.333 | +400% | Three of a kind |
+| **TWO PAIR** | `aabb1cd` | +50 | 1 in 45 | +1.111 | +400% | Two consecutive pairs |
 | **ALL NUMBERS** | `1230984` | +10 | 1 in 26.8 | +0.373 | 0% | Only numbers (break even) |
 | **NO WIN** | `abcd123` | -10 | ~35% | ~-3.5 | -200% | No pattern |
 
@@ -103,9 +103,9 @@ For the nerds who love the math:
 
 ### Fastest to Hit (statistically)
 
-- **TWO PAIR**: Should see one in your first 30 commits
-- **ALL NUMBERS**: Should see one in your first 27 commits
-- **THREE OF A KIND**: Should see one in your first 133 commits
+- **THREE OF A KIND**: Most common win, about 1 in 15 commits
+- **ALL NUMBERS**: Break even, about 1 in 27 commits
+- **TWO PAIR**: Should see one in your first 45 commits
 
 ### Commit Milestones
 
