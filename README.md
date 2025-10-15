@@ -307,6 +307,14 @@ Contributions welcome! Please feel free to:
 
 ---
 
+## Support
+
+Enjoying Git Slot Machine? Consider sponsoring development:
+
+[![Sponsor](https://img.shields.io/badge/Sponsor-GitHub-pink?logo=github)](https://github.com/sponsors/than)
+
+---
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details
