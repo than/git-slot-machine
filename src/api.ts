@@ -50,10 +50,16 @@ export function isApiAvailable(): boolean {
   return isSyncEnabled() && getApiToken() !== null;
 }
 
+export interface PlayResponse {
+  balance: number;
+  payout: number;
+  pattern_name: string;
+}
+
 // Send play data to API
-export async function sendPlayToAPI(data: PlayData): Promise<boolean> {
+export async function sendPlayToAPI(data: PlayData): Promise<PlayResponse | null> {
   if (!isApiAvailable()) {
-    return false;
+    return null;
   }
 
   try {
@@ -67,14 +73,15 @@ export async function sendPlayToAPI(data: PlayData): Promise<boolean> {
     if (!response.ok) {
       const error = await response.text();
       console.error(`API Error (${response.status}):`, error);
-      return false;
+      return null;
     }
 
-    return true;
+    const result = await response.json() as ApiResponse<PlayResponse>;
+    return result.data || null;
   } catch (error) {
     // Silently fail if offline or API unavailable
     // The user still gets local feedback
-    return false;
+    return null;
   }
 }
 

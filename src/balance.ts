@@ -92,6 +92,25 @@ export function updateBalance(hash: string, payout: number): number {
   return repo.balance;
 }
 
+export function setBalance(newBalance: number): void {
+  const repoPath = getRepoPath() || 'global';
+  const data = loadBalance();
+
+  if (!data.repos[repoPath]) {
+    data.repos[repoPath] = {
+      balance: newBalance,
+      totalCommits: 0,
+      totalWinnings: 0,
+      biggestWin: 0,
+      lastCommit: ''
+    };
+  } else {
+    data.repos[repoPath].balance = newBalance;
+  }
+
+  saveBalance(data);
+}
+
 export function getRepoStats() {
   const repoPath = getRepoPath() || 'global';
   const data = loadBalance();

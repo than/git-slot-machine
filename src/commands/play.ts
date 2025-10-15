@@ -1,6 +1,6 @@
 import { detectPattern } from '../patterns';
 import { animateSlotMachine, animateSmallMode } from '../animation/slotMachine';
-import { getBalance, updateBalance } from '../balance';
+import { getBalance, updateBalance, setBalance } from '../balance';
 import { sendPlayToAPI } from '../api';
 import { getRepoInfo, getGitHubUsername } from '../config';
 import chalk from 'chalk';
@@ -62,10 +62,10 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
       console.log(' '.repeat(descPadding) + chalk.dim(descText));
     }
 
-    // Update balance
-    const newBalance = updateBalance(hash.toLowerCase(), result.payout);
+    // Update balance locally
+    let newBalance = updateBalance(hash.toLowerCase(), result.payout);
 
-    // Send to API in the background (don't block)
+    // Send to API and sync balance with server
     const repoInfo = getRepoInfo();
     const githubUsername = getGitHubUsername();
 
@@ -89,9 +89,16 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
         playData.commit_full_hash = options.fullHash;
       }
 
-      sendPlayToAPI(playData).catch(() => {
+      try {
+        const apiResponse = await sendPlayToAPI(playData);
+        // Sync local balance to match server's balance
+        if (apiResponse && apiResponse.balance !== undefined) {
+          setBalance(apiResponse.balance);
+          newBalance = apiResponse.balance;
+        }
+      } catch (error) {
         // Silently fail - local play already succeeded
-      });
+      }
     }
 
     // Show result and balance
