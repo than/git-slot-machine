@@ -1,8 +1,7 @@
 import { getApiUrl, getApiToken, isSyncEnabled } from './config';
 
-// Fallback domains to try in order
+// Fallback domains to try in order (if primary fails)
 const FALLBACK_DOMAINS = [
-  'https://api.gitslotmachine.com',
   'https://gitslotmachinecom-main-vilmm1.laravel.cloud',
 ];
 

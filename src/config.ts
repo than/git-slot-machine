@@ -93,7 +93,7 @@ export function setGitHubUsername(username: string): void {
 
 export function getApiUrl(): string {
   const config = getConfig();
-  return config.apiUrl || process.env.GIT_SLOT_MACHINE_API_URL || 'https://gitslotmachinecom-main-vilmm1.laravel.cloud/api';
+  return config.apiUrl || process.env.GIT_SLOT_MACHINE_API_URL || 'https://gitslotmachine.com/api';
 }
 
 export function setApiUrl(url: string): void {
