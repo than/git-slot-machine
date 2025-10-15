@@ -1,5 +1,5 @@
 {
-  "name": "@git-slot-machine/cli",
+  "name": "git-slot-machine",
   "version": "1.0.0",
   "description": "Turn your git commits into a slot machine game! CLI tool with global leaderboards and win streaks.",
   "main": "dist/index.js",
@@ -33,9 +33,6 @@
   ],
   "author": "Than Tibbetts <https://github.com/than>",
   "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
