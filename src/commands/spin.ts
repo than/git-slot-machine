@@ -1,5 +1,5 @@
-import { getCurrentCommitHash, getCurrentCommitFullHash } from '../utils/git';
-import { playCommand } from './play';
+import { getCurrentCommitHash, getCurrentCommitFullHash } from '../utils/git.js';
+import { playCommand } from './play.js';
 
 interface SpinOptions {
   small?: boolean;

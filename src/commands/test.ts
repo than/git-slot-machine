@@ -1,4 +1,4 @@
-import { playCommand } from './play';
+import { playCommand } from './play.js';
 
 interface TestOptions {
   small?: boolean;

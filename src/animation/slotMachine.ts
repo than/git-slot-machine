@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { PatternResult } from '../patterns';
+import { PatternResult } from '../patterns.js';
 
 const HEX_CHARS = '0123456789abcdef'.split('');
 const ANIMATION_SPEED = 50; // ms per frame

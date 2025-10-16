@@ -1,4 +1,4 @@
-import { getApiUrl, getApiToken, isSyncEnabled } from './config';
+import { getApiUrl, getApiToken, isSyncEnabled } from './config.js';
 
 // Fallback domains to try in order (if primary fails)
 const FALLBACK_DOMAINS = [

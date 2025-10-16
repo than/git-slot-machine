@@ -2,9 +2,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
 import chalk from 'chalk';
-import { isGitRepo } from '../utils/git';
-import { POST_COMMIT_HOOK } from '../templates/post-commit';
-import { getRepoInfo, setGitHubUsername, getGitHubUsername, setPrivateRepo } from '../config';
+import { isGitRepo } from '../utils/git.js';
+import { POST_COMMIT_HOOK } from '../templates/post-commit.js';
+import { getRepoInfo, setGitHubUsername, getGitHubUsername, setPrivateRepo } from '../config.js';
 
 async function isRepoPublic(owner: string, repo: string): Promise<boolean | null> {
   try {

@@ -1,6 +1,6 @@
 import chalk from 'chalk';
-import { createToken, logout as apiLogout, verifyToken } from '../api';
-import { setApiToken, clearApiToken, getApiToken, getApiUrl, setGitHubUsername } from '../config';
+import { createToken, logout as apiLogout, verifyToken } from '../api.js';
+import { setApiToken, clearApiToken, getApiToken, getApiUrl, setGitHubUsername } from '../config.js';
 
 export async function authLoginCommand(githubUsername: string): Promise<void> {
   try {

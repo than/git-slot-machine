@@ -5,7 +5,7 @@ import {
   isSyncEnabled,
   setSyncEnabled,
   getConfig
-} from '../config';
+} from '../config.js';
 
 export async function configGetCommand(key: string): Promise<void> {
   try {

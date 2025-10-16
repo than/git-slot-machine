@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { playCommand } from './commands/play';
-import { spinCommand } from './commands/spin';
-import { initCommand } from './commands/init';
-import { balanceCommand } from './commands/balance';
-import { testCommand } from './commands/test';
-import { authLoginCommand, authLogoutCommand, authStatusCommand } from './commands/auth';
-import { syncCommand } from './commands/sync';
-import { configGetCommand, configSetCommand } from './commands/config';
+import { playCommand } from './commands/play.js';
+import { spinCommand } from './commands/spin.js';
+import { initCommand } from './commands/init.js';
+import { balanceCommand } from './commands/balance.js';
+import { testCommand } from './commands/test.js';
+import { authLoginCommand, authLogoutCommand, authStatusCommand } from './commands/auth.js';
+import { syncCommand } from './commands/sync.js';
+import { configGetCommand, configSetCommand } from './commands/config.js';
 
 const program = new Command();
 

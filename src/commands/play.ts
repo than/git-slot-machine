@@ -1,8 +1,8 @@
-import { detectPattern } from '../patterns';
-import { animateSlotMachine, animateSmallMode } from '../animation/slotMachine';
-import { getBalance, updateBalance, setBalance } from '../balance';
-import { sendPlayToAPI } from '../api';
-import { getRepoInfo, getGitHubUsername } from '../config';
+import { detectPattern } from '../patterns.js';
+import { animateSlotMachine, animateSmallMode } from '../animation/slotMachine.js';
+import { getBalance, updateBalance, setBalance } from '../balance.js';
+import { sendPlayToAPI } from '../api.js';
+import { getRepoInfo, getGitHubUsername } from '../config.js';
 import chalk from 'chalk';
 
 interface PlayOptions {

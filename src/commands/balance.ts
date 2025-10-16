@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { getRepoStats } from '../balance';
+import { getRepoStats } from '../balance.js';
 
 export function balanceCommand(): void {
   try {

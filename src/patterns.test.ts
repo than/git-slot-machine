@@ -1,4 +1,4 @@
-import { detectPattern, PatternType } from './patterns';
+import { detectPattern, PatternType } from './patterns.js';
 
 describe('Pattern Detection', () => {
   it('detects all same character', () => {

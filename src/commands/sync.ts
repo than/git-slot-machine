@@ -1,6 +1,6 @@
 import chalk from 'chalk';
-import { getBalance as getApiBalance } from '../api';
-import { getBalance as getLocalBalance } from '../balance';
+import { getBalance as getApiBalance } from '../api.js';
+import { getBalance as getLocalBalance } from '../balance.js';
 
 export async function syncCommand(): Promise<void> {
   try {
