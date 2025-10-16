@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2025-01-16
+
+### Improved
+- Enhanced privacy mode messaging with visual indicators (✓ and ✗) to clearly show what data is and isn't sent to the server
+- Privacy mode now displays a red X for repository details that are NOT sent
+- Public mode shows all items with green checkmarks
+- Added explanatory note for privacy mode showing that repo details are sent as "private/private"
+
 ## [1.1.1] - 2025-01-16
 
 ### Fixed

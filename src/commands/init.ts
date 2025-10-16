@@ -150,10 +150,22 @@ export async function initCommand(): Promise<void> {
   console.log(chalk.dim(`  git-slot-machine auth login ${repoInfo?.owner || 'your-github-username'}`));
   console.log();
   console.log(chalk.yellow('What gets sent to the server:'));
-  console.log(chalk.dim('  • Commit hash (7 and 40 character versions)'));
-  console.log(chalk.dim('  • Repository URL, owner, and name'));
-  console.log(chalk.dim('  • GitHub username'));
-  console.log(chalk.dim('  • Pattern type, payout, and balance'));
+
+  if (usePrivacyMode) {
+    // Privacy mode - show what is NOT sent
+    console.log(chalk.green('  ✓ Commit hash (7 and 40 character versions)'));
+    console.log(chalk.red('  ✗ Repository URL, owner, and name'));
+    console.log(chalk.dim('    (Sent as "private/private" instead)'));
+    console.log(chalk.green('  ✓ GitHub username'));
+    console.log(chalk.green('  ✓ Pattern type, payout, and balance'));
+  } else {
+    // Public mode - everything is sent
+    console.log(chalk.green('  ✓ Commit hash (7 and 40 character versions)'));
+    console.log(chalk.green('  ✓ Repository URL, owner, and name'));
+    console.log(chalk.green('  ✓ GitHub username'));
+    console.log(chalk.green('  ✓ Pattern type, payout, and balance'));
+  }
+
   console.log();
   console.log(chalk.dim('You can disable API sync anytime:'));
   console.log(chalk.dim('  git-slot-machine config set sync-enabled false'));
