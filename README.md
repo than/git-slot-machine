@@ -127,7 +127,7 @@ Every commit costs **10 points**. You start with **100 points**.
 | **FIVE OF A KIND** | `aaaaa12` | +1,000 | 1 in 7,989 | +0.125 | +9,900% | Five of a kind |
 | **BIG STRAIGHT** | `012345a` | +500 | 1 in ~280,000 | ~+0.002 | +4,900% | Six in a row |
 | **FOUR OF A KIND** | `aaaa123` | +400 | 1 in 799 | +0.501 | +3,900% | Four of a kind |
-| **ALL LETTERS** | `abcdefa` | +300 | 1 in 959 | +0.313 | +2,900% | Only letters (a-f) |
+| **ALPHABET SOUP** | `abcdefa` | +300 | 1 in 959 | +0.313 | +2,900% | Only letters (a-f) |
 | **STRAIGHT** | `01234ab` | +200 | 1 in ~9,000 | ~+0.022 | +1,900% | Five in a row |
 | **DOUBLE TRIPLE** | `aaabbb1` | +150 | 1 in ~2,000 | ~+0.075 | +1,400% | Two three of a kinds |
 | **FULL HOUSE** | `aaaabb1` | +100 | 1 in ~1,000 | ~+0.100 | +900% | Three and two of a kind |
@@ -159,7 +159,7 @@ For the nerds who love the math:
 - FULLEST HOUSE, FIVE OF A KIND, BIG STRAIGHT
 
 **Rare (Uncommon):**
-- FOUR OF A KIND, ALL LETTERS, STRAIGHT
+- FOUR OF A KIND, ALPHABET SOUP, STRAIGHT
 
 **Uncommon (Regular wins):**
 - DOUBLE TRIPLE, FULL HOUSE, THREE PAIR

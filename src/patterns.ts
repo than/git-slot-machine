@@ -33,7 +33,7 @@ const PAYOUTS: Record<PatternType, { name: string; payout: number; description: 
   [PatternType.FIVE_OF_KIND]: { name: 'FIVE OF A KIND', payout: 1000, description: 'Five of a kind' },
   [PatternType.STRAIGHT_6]: { name: 'BIG STRAIGHT', payout: 500, description: 'Six in a row' },
   [PatternType.FOUR_OF_KIND]: { name: 'FOUR OF A KIND', payout: 400, description: 'Four of a kind' },
-  [PatternType.ALL_LETTERS]: { name: 'ALL LETTERS', payout: 300, description: 'Only letters (a-f)' },
+  [PatternType.ALL_LETTERS]: { name: 'ALPHABET SOUP', payout: 300, description: 'Only letters (a-f)' },
   [PatternType.STRAIGHT_5]: { name: 'STRAIGHT', payout: 200, description: 'Five in a row' },
   [PatternType.THREE_OF_KIND_PLUS_THREE]: { name: 'DOUBLE TRIPLE', payout: 150, description: 'Two three of a kinds' },
   [PatternType.FULL_HOUSE]: { name: 'FULL HOUSE', payout: 100, description: 'Three and two of a kind' },
