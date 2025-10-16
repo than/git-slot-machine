@@ -15,7 +15,7 @@ const program = new Command();
 program
   .name('git-slot-machine')
   .description('Git commit hash slot machine')
-  .version('0.1.0');
+  .version('1.2.1', '-v, --version', 'Output the current version');
 
 program
   .command('play')
