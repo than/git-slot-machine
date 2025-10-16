@@ -2,14 +2,6 @@
 
 import chalk from 'chalk';
 
-// Only show message for global installs (when npm_config_global is set)
-const isGlobalInstall = process.env.npm_config_global === 'true';
-
-if (!isGlobalInstall) {
-  // Skip message for local/dev installs
-  process.exit(0);
-}
-
 console.log();
 console.log(chalk.green.bold('🎰 Git Slot Machine installed successfully!'));
 console.log();
