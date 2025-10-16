@@ -146,20 +146,19 @@ export async function initCommand(): Promise<void> {
 
   // Check if hook already exists
   if (fs.existsSync(hookPath)) {
-    console.log(chalk.yellow('Warning: post-commit hook already exists'));
+    console.log(chalk.yellow('⚠️  Post-commit hook already exists'));
     console.log(chalk.dim(`Location: ${hookPath}`));
-
-    // TODO: Could add merge logic or backup existing hook
-    console.log(chalk.red('Aborting to avoid overwriting existing hook'));
-    console.log(chalk.dim('Manually add git-slot-machine to your existing hook'));
-    process.exit(1);
+    console.log();
+    console.log(chalk.yellow('Skipping hook installation to avoid overwriting.'));
+    console.log(chalk.dim('To use Git Slot Machine, manually add this to your existing hook:'));
+    console.log(chalk.cyan('  git-slot-machine play'));
+    console.log();
+  } else {
+    // Write the hook
+    fs.writeFileSync(hookPath, POST_COMMIT_HOOK, { mode: 0o755 });
+    console.log(chalk.green('✓ Post-commit hook installed'));
+    console.log();
   }
-
-  // Write the hook
-  fs.writeFileSync(hookPath, POST_COMMIT_HOOK, { mode: 0o755 });
-
-  console.log(chalk.green('✓ Post-commit hook installed'));
-  console.log();
 
   // Ask if they want to join the leaderboard
   const joinLeaderboard = await askQuestion(chalk.cyan('Join the global leaderboard? (Y/n): '));

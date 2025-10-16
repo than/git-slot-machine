@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.4] - 2025-01-16
+
+### Fixed
+- Fixed `init` command to continue setup even when post-commit hook already exists
+- Now completes username setup, privacy mode, and leaderboard opt-in when hook exists
+- Shows instructions for manually integrating with existing hooks instead of aborting
+
 ## [1.2.3] - 2025-01-16
 
 ### Fixed
