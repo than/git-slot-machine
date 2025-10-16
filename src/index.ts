@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import chalk from 'chalk';
 import { playCommand } from './commands/play.js';
 import { spinCommand } from './commands/spin.js';
 import { initCommand } from './commands/init.js';
@@ -15,7 +16,7 @@ const program = new Command();
 program
   .name('git-slot-machine')
   .description('Git commit hash slot machine')
-  .version('1.2.4', '-v, --version', 'Output the current version');
+  .version('1.3.0', '-v, --version', 'Output the current version');
 
 program
   .command('play')
@@ -77,7 +78,7 @@ program
     await authStatusCommand();
   });
 
-// Sync command
+// Sync commands
 program
   .command('sync')
   .description('Sync balance with API')
@@ -85,22 +86,43 @@ program
     await syncCommand();
   });
 
-// Config commands
-const config = program
-  .command('config')
-  .description('Manage CLI configuration');
+program
+  .command('sync:enable')
+  .description('Enable automatic API sync')
+  .action(async () => {
+    await configSetCommand('sync-enabled', 'true');
+  });
 
-config
-  .command('get')
-  .description('Get configuration value')
+program
+  .command('sync:disable')
+  .description('Disable automatic API sync')
+  .action(async () => {
+    await configSetCommand('sync-enabled', 'false');
+  });
+
+// Username commands
+program
+  .command('username:set')
+  .description('Set GitHub username')
+  .argument('<username>', 'Your GitHub username')
+  .action(async (username: string) => {
+    const { setGitHubUsername } = await import('./config.js');
+    setGitHubUsername(username);
+    console.log(chalk.green(`GitHub username set to: ${username}`));
+  });
+
+// Config commands (advanced)
+program
+  .command('config:get')
+  .description('Get configuration value (advanced)')
   .argument('<key>', 'Configuration key (api-url, sync-enabled, all)')
   .action(async (key: string) => {
     await configGetCommand(key);
   });
 
-config
-  .command('set')
-  .description('Set configuration value')
+program
+  .command('config:set')
+  .description('Set configuration value (advanced)')
   .argument('<key>', 'Configuration key (api-url, sync-enabled)')
   .argument('<value>', 'Configuration value')
   .action(async (key: string, value: string) => {
