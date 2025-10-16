@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] - 2025-01-16
+
+### Added
+- **Organization vs personal credit choice** during `init` command
+  - Choose whether commits should be credited to your personal username or the repo's organization
+  - Per-repo configuration stored locally in `.git/slot-machine-config.json`
+  - Prompt only appears when repo owner differs from your personal username
+  - Perfect for company repos (credit the org) or personal projects (credit yourself)
+
+### Changed
+- `getGitHubUsername()` now checks for per-repo override before falling back to global username
+- Added `playAsUsername` field to config interface for per-repo identity
+
+### Improved
+- More flexible identity management for developers working across personal and organizational repos
+- Each repository can have its own credit preferences
+
 ## [1.3.1] - 2025-01-16
 
 ### Changed
