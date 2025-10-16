@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2025-01-16
+
+### Changed
+- Hidden `config:get` and `config:set` from default help output (dev/advanced only)
+- Updated `init` command to show new `sync:disable` command instead of old syntax
+
+### Improved
+- Cleaner help output focusing on user-facing commands
+- Advanced commands still available but don't clutter common workflows
+
 ## [1.3.0] - 2025-01-16
 
 ### Changed

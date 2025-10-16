@@ -16,7 +16,7 @@ const program = new Command();
 program
   .name('git-slot-machine')
   .description('Git commit hash slot machine')
-  .version('1.3.0', '-v, --version', 'Output the current version');
+  .version('1.3.1', '-v, --version', 'Output the current version');
 
 program
   .command('play')
@@ -111,9 +111,9 @@ program
     console.log(chalk.green(`GitHub username set to: ${username}`));
   });
 
-// Config commands (advanced)
+// Config commands (advanced - hidden from main help)
 program
-  .command('config:get')
+  .command('config:get', { hidden: true })
   .description('Get configuration value (advanced)')
   .argument('<key>', 'Configuration key (api-url, sync-enabled, all)')
   .action(async (key: string) => {
@@ -121,7 +121,7 @@ program
   });
 
 program
-  .command('config:set')
+  .command('config:set', { hidden: true })
   .description('Set configuration value (advanced)')
   .argument('<key>', 'Configuration key (api-url, sync-enabled)')
   .argument('<value>', 'Configuration value')

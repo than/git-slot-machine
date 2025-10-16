@@ -226,5 +226,5 @@ export async function initCommand(): Promise<void> {
 
   console.log();
   console.log(chalk.dim('You can disable API sync anytime:'));
-  console.log(chalk.dim('  git-slot-machine config set sync-enabled false'));
+  console.log(chalk.dim('  git-slot-machine sync:disable'));
 }
