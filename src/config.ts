@@ -5,6 +5,7 @@ import { execSync } from 'child_process';
 
 interface Config {
   githubUsername?: string;
+  playAsUsername?: string; // Per-repo override: play as this username instead
   apiUrl?: string;
   apiToken?: string;
   syncEnabled?: boolean;
@@ -83,7 +84,8 @@ export function saveGlobalConfig(config: Config): void {
 
 export function getGitHubUsername(): string | null {
   const config = getConfig();
-  return config.githubUsername || null;
+  // Check for per-repo override first, then fall back to global username
+  return config.playAsUsername || config.githubUsername || null;
 }
 
 export function setGitHubUsername(username: string): void {
@@ -140,6 +142,17 @@ export function setPrivateRepo(isPrivate: boolean): void {
   const config = getRepoConfig();
   config.privateRepo = isPrivate;
   saveRepoConfig(config);
+}
+
+export function setPlayAsUsername(username: string): void {
+  const config = getRepoConfig();
+  config.playAsUsername = username;
+  saveRepoConfig(config);
+}
+
+export function getPlayAsUsername(): string | null {
+  const config = getRepoConfig();
+  return config.playAsUsername || null;
 }
 
 export function getRepoInfo(): { owner: string; name: string; url: string } | null {

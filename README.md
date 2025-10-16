@@ -26,7 +26,9 @@ npm install -g git-slot-machine
 cd your-repo
 git-slot-machine init
 
-# (during init, you'll be prompted to join the leaderboard)
+# (during init, you'll be prompted to:
+#  - join the leaderboard
+#  - choose whether commits should be credited to you or the repo's org)
 
 # Make a commit and watch the magic happen!
 git commit -m "feat: add new feature"
@@ -231,10 +233,19 @@ Based on character counts:
 ## How It Works
 
 1. **Install the hook**: `git-slot-machine init` adds a post-commit hook to your repo
-2. **Make commits**: Every time you commit, the hook runs automatically
-3. **Get results**: See your pattern, payout, and updated balance immediately
-4. **Sync globally**: Your plays sync to gitslotmachine.com (if authenticated)
-5. **Compete**: Climb the leaderboards and build win streaks!
+2. **Choose your identity**: During init, decide whether commits should be credited to you or the repo's org
+3. **Make commits**: Every time you commit, the hook runs automatically
+4. **Get results**: See your pattern, payout, and updated balance immediately
+5. **Sync globally**: Your plays sync to gitslotmachine.com (if authenticated)
+6. **Compete**: Climb the leaderboards and build win streaks!
+
+### Organization vs Personal Credits
+
+When you run `git-slot-machine init` in a repo owned by an organization:
+- You'll be asked who should get credit for commits: **you** or **the org**
+- This choice is **per-repo** and stored locally (`.git/slot-machine-config.json`)
+- Personal repos automatically credit your personal account
+- Perfect for company repos where you want org stats, or personal projects where you want individual credit
 
 ### Privacy & Data
 

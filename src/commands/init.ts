@@ -4,7 +4,7 @@ import * as readline from 'readline';
 import chalk from 'chalk';
 import { isGitRepo, detectGitHubUsername } from '../utils/git.js';
 import { POST_COMMIT_HOOK } from '../templates/post-commit.js';
-import { getRepoInfo, setGitHubUsername, getGitHubUsername, setPrivateRepo } from '../config.js';
+import { getRepoInfo, setGitHubUsername, getGitHubUsername, setPrivateRepo, setPlayAsUsername } from '../config.js';
 import { authLoginCommand } from './auth.js';
 
 async function isRepoPublic(owner: string, repo: string): Promise<boolean | null> {
@@ -187,6 +187,35 @@ export async function initCommand(): Promise<void> {
       }
       setGitHubUsername(githubUsername);
       console.log();
+    }
+
+    // Ask if they want to play as org or personal username
+    const repoOwner = repoInfo.owner;
+
+    // Only ask if repo owner is different from personal username and not in privacy mode
+    if (!usePrivacyMode && repoOwner.toLowerCase() !== githubUsername.toLowerCase()) {
+      console.log(chalk.cyan('Who should get credit for commits in this repo?'));
+      console.log();
+      console.log(chalk.dim(`  1) ${githubUsername} (your personal account)`));
+      console.log(chalk.dim(`  2) ${repoOwner} (this repo's organization)`));
+      console.log();
+
+      const choice = await askQuestion(chalk.cyan('Choose (1 or 2): '));
+      console.log();
+
+      if (choice === '2') {
+        // Play as org
+        setPlayAsUsername(repoOwner);
+        console.log(chalk.green(`✓ Commits in this repo will be credited to ${repoOwner}`));
+        console.log();
+
+        // Update githubUsername for authentication
+        githubUsername = repoOwner;
+      } else {
+        // Play as personal username (default)
+        console.log(chalk.green(`✓ Commits in this repo will be credited to ${githubUsername}`));
+        console.log();
+      }
     }
 
     // Authenticate
