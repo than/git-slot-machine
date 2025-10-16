@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-01-16
+
+### Breaking Changes
+- **Simplified command structure**: Authentication commands moved to top-level
+  - `git-slot-machine auth login <username>` → `git-slot-machine login <username>`
+  - `git-slot-machine auth status` → `git-slot-machine status`
+  - `git-slot-machine auth logout` → `git-slot-machine logout`
+
+### Added
+- **Automatic GitHub username detection** during init with smart fallback chain:
+  - GitHub CLI (`gh`) authentication
+  - Git config `github.user`
+  - GitHub noreply email pattern
+  - Manual prompt as fallback
+- **Opt-in leaderboard prompt** during init - users choose whether to join
+- **Postinstall script** with setup instructions (global installs only)
+
+### Changed
+- GitHub username now stored globally (not per-repo) as it represents developer identity
+- Init flow now prompts to join leaderboard with username confirmation
+- Authentication is now optional but encouraged during setup
+
+### Improved
+- Clearer onboarding experience with guided prompts
+- Better username detection reduces manual entry
+- More intuitive command structure (no nested `auth` subcommand)
+
 ## [1.1.2] - 2025-01-16
 
 ### Improved

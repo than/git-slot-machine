@@ -54,29 +54,25 @@ program
     await testCommand(options);
   });
 
-// Auth commands
-const auth = program
-  .command('auth')
-  .description('Manage API authentication');
-
-auth
+// Auth commands (top-level)
+program
   .command('login')
-  .description('Login with GitHub username')
+  .description('Login with GitHub username to join the leaderboard')
   .argument('<github-username>', 'Your GitHub username')
   .action(async (githubUsername: string) => {
     await authLoginCommand(githubUsername);
   });
 
-auth
+program
   .command('logout')
-  .description('Logout and clear API token')
+  .description('Logout and clear authentication')
   .action(async () => {
     await authLogoutCommand();
   });
 
-auth
+program
   .command('status')
-  .description('Show authentication status')
+  .description('Show authentication and sync status')
   .action(async () => {
     await authStatusCommand();
   });

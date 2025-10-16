@@ -2,9 +2,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
 import chalk from 'chalk';
-import { isGitRepo } from '../utils/git.js';
+import { isGitRepo, detectGitHubUsername } from '../utils/git.js';
 import { POST_COMMIT_HOOK } from '../templates/post-commit.js';
 import { getRepoInfo, setGitHubUsername, getGitHubUsername, setPrivateRepo } from '../config.js';
+import { authLoginCommand } from './auth.js';
 
 async function isRepoPublic(owner: string, repo: string): Promise<boolean | null> {
   try {
@@ -50,7 +51,7 @@ export async function initCommand(): Promise<void> {
     process.exit(1);
   }
 
-  // Extract and save GitHub username from remote URL (do this first)
+  // Check for GitHub remote
   const repoInfo = getRepoInfo();
 
   if (!repoInfo) {
@@ -65,10 +66,29 @@ export async function initCommand(): Promise<void> {
     process.exit(1);
   }
 
-  const existingUsername = getGitHubUsername();
-  if (!existingUsername) {
-    setGitHubUsername(repoInfo.owner);
-    console.log(chalk.dim(`Detected GitHub username: ${repoInfo.owner}`));
+  // Detect GitHub username (not repo owner)
+  let githubUsername = getGitHubUsername();
+
+  if (!githubUsername) {
+    // Try to detect from git config
+    githubUsername = detectGitHubUsername();
+
+    if (githubUsername) {
+      console.log(chalk.dim(`Detected GitHub username: ${githubUsername}`));
+    } else {
+      // Couldn't detect, prompt user
+      console.log();
+      console.log(chalk.yellow('GitHub username not detected'));
+      console.log(chalk.dim('We need your GitHub username (not the repo owner) for the leaderboard'));
+      githubUsername = await askQuestion(chalk.cyan('Enter your GitHub username: '));
+
+      if (!githubUsername) {
+        console.log(chalk.red('GitHub username is required'));
+        process.exit(1);
+      }
+    }
+
+    setGitHubUsername(githubUsername);
   }
 
   // Check if repository is public
@@ -140,14 +160,53 @@ export async function initCommand(): Promise<void> {
 
   console.log(chalk.green('✓ Post-commit hook installed'));
   console.log();
-  console.log(chalk.cyan('Git Slot Machine is ready!'));
-  console.log(chalk.dim('Every commit will now spin the slot machine.'));
+
+  // Ask if they want to join the leaderboard
+  const joinLeaderboard = await askQuestion(chalk.cyan('Join the global leaderboard? (Y/n): '));
   console.log();
-  console.log('Try it out:');
+
+  if (joinLeaderboard === 'n' || joinLeaderboard === 'no') {
+    console.log(chalk.green('✓ Git Slot Machine is ready (local mode only)'));
+    console.log(chalk.dim('Every commit will spin the slot machine locally.'));
+    console.log();
+    console.log(chalk.dim('To join the leaderboard later:'));
+    console.log(chalk.cyan('  git-slot-machine login your-username'));
+    console.log();
+  } else {
+    // Confirm detected username
+    console.log(chalk.dim(`Detected GitHub username: ${githubUsername}`));
+    const isCorrect = await askQuestion(chalk.cyan('Is this correct? (Y/n): '));
+    console.log();
+
+    if (isCorrect === 'n' || isCorrect === 'no') {
+      githubUsername = await askQuestion(chalk.cyan('Enter your GitHub username: '));
+      if (!githubUsername) {
+        console.log(chalk.yellow('Skipping authentication - you can join later'));
+        console.log(chalk.cyan('  git-slot-machine login your-username'));
+        console.log();
+        return;
+      }
+      setGitHubUsername(githubUsername);
+      console.log();
+    }
+
+    // Authenticate
+    console.log(chalk.dim('Authenticating...'));
+    try {
+      await authLoginCommand(githubUsername);
+      console.log(chalk.green('✓ You\'re on the leaderboard!'));
+      console.log(chalk.dim('View it at: https://gitslotmachine.com'));
+      console.log();
+    } catch (error) {
+      console.log(chalk.yellow('⚠️  Authentication failed'));
+      console.log(chalk.dim('Your commits will work locally, but won\'t appear on the leaderboard'));
+      console.log(chalk.dim(`Try again: git-slot-machine login ${githubUsername}`));
+      console.log();
+    }
+  }
+
+  console.log(chalk.cyan('Try it out:'));
   console.log(chalk.dim('  git commit --allow-empty -m "test"'));
-  console.log();
-  console.log(chalk.cyan('Optional: Sync with the API'));
-  console.log(chalk.dim(`  git-slot-machine auth login ${repoInfo?.owner || 'your-github-username'}`));
   console.log();
   console.log(chalk.yellow('What gets sent to the server:'));
 

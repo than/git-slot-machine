@@ -36,3 +36,53 @@ export function isGitRepo(): boolean {
     return false;
   }
 }
+
+export function detectGitHubUsername(): string | null {
+  // Try 1: Check GitHub CLI (gh)
+  try {
+    const ghUser = execSync('gh api user --jq .login', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    }).trim();
+
+    if (ghUser) {
+      return ghUser;
+    }
+  } catch {
+    // gh not installed or not authenticated, continue to next method
+  }
+
+  // Try 2: Check git config github.user
+  try {
+    const githubUser = execSync('git config github.user', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    }).trim();
+
+    if (githubUser) {
+      return githubUser;
+    }
+  } catch {
+    // github.user not set, continue to next method
+  }
+
+  // Try 3: Extract from GitHub noreply email
+  try {
+    const email = execSync('git config user.email', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    }).trim();
+
+    // Match patterns like:
+    // - username@users.noreply.github.com
+    // - 12345+username@users.noreply.github.com (with ID prefix)
+    const match = email.match(/^(?:\d+\+)?(.+)@users\.noreply\.github\.com$/);
+    if (match) {
+      return match[1];
+    }
+  } catch {
+    // user.email not set or no match
+  }
+
+  return null;
+}

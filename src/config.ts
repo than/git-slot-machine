@@ -87,9 +87,9 @@ export function getGitHubUsername(): string | null {
 }
 
 export function setGitHubUsername(username: string): void {
-  const config = getRepoConfig();
+  const config = getGlobalConfig();
   config.githubUsername = username;
-  saveRepoConfig(config);
+  saveGlobalConfig(config);
 }
 
 export function getApiUrl(): string {

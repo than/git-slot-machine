@@ -22,12 +22,11 @@ A fun CLI tool that analyzes your commit hashes and rewards you based on pattern
 # Install globally
 npm install -g git-slot-machine
 
-# Authenticate with your GitHub username
-git-slot-machine auth login
-
 # Install post-commit hook in your repo
 cd your-repo
 git-slot-machine init
+
+# (during init, you'll be prompted to join the leaderboard)
 
 # Make a commit and watch the magic happen!
 git commit -m "feat: add new feature"
@@ -62,13 +61,13 @@ npm install -g git-slot-machine
 
 ```bash
 # Login with your GitHub username
-git-slot-machine auth login
+git-slot-machine login <your-github-username>
 
 # Check authentication status
-git-slot-machine auth status
+git-slot-machine status
 
 # Logout
-git-slot-machine auth logout
+git-slot-machine logout
 ```
 
 ### Gameplay
