@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-10-17
+
+### Breaking Changes
+- **Complete payout rebalancing** based on actual probabilities
+- Patterns now ordered by rarity (rarest first)
+- Top-tier payouts massively increased:
+  - JACKPOT: 10K → 100K
+  - LUCKY SEVEN: 2.5K → 50K
+  - BIG STRAIGHT: 500 → 25K
+- Mid-tier balanced:
+  - HEXTET: 5K → 10K
+  - FULLEST HOUSE: 2K → 5K
+  - STRAIGHT: 200 → 2.5K
+  - FIVE OF A KIND: 1K → 2K
+- Common patterns remain profitable:
+  - THREE OF A KIND: 50 → 100
+  - TWO PAIR: 50 → 25
+  - ALL NUMBERS: 10 (unchanged, break-even)
+- ~99% return rate for sustainable long-term play
+
+### Changed
+- Payout curve now properly reflects mathematical probabilities
+- Rare patterns properly rewarded relative to their actual odds
+
 ## [1.3.2] - 2025-01-16
 
 ### Added
