@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-10-17
+
+### Added
+- **ONE PAIR pattern** - New break-even pattern at +10 points
+  - Exactly one consecutive pair (e.g., `aa1b3d5`)
+  - Occurs in ~14% of commits (~1 in 7)
+  - Replaces the old break-even pattern
+
+### Changed
+- **ALL NUMBERS payout increased**: 10 → 50 points
+  - Pattern now properly rewarded for its rarity (1 in 485)
+  - Break-even role moved to ONE PAIR
+- Pattern detection priority updated to check ONE PAIR after ALL NUMBERS
+
 ## [2.0.0] - 2025-10-17
 
 ### Breaking Changes

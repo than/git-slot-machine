@@ -14,6 +14,7 @@ export enum PatternType {
   THREE_OF_KIND = 'THREE_OF_KIND',
   TWO_PAIR = 'TWO_PAIR',
   ALL_NUMBERS = 'ALL_NUMBERS',
+  ONE_PAIR = 'ONE_PAIR',
   NO_WIN = 'NO_WIN'
 }
 
@@ -39,8 +40,9 @@ const PAYOUTS: Record<PatternType, { name: string; payout: number; description: 
   [PatternType.ALL_LETTERS]: { name: 'ALPHABET SOUP', payout: 250, description: 'Only letters (a-f)' },
   [PatternType.FOUR_OF_KIND]: { name: 'FOUR OF A KIND', payout: 200, description: 'Four of a kind' },
   [PatternType.THREE_OF_KIND]: { name: 'THREE OF A KIND', payout: 100, description: 'Three of a kind' },
+  [PatternType.ALL_NUMBERS]: { name: 'ALL NUMBERS', payout: 50, description: 'Only numbers (0-9)' },
   [PatternType.TWO_PAIR]: { name: 'TWO PAIR', payout: 25, description: 'Two pairs' },
-  [PatternType.ALL_NUMBERS]: { name: 'ALL NUMBERS', payout: 10, description: 'Only numbers (0-9)' },
+  [PatternType.ONE_PAIR]: { name: 'ONE PAIR', payout: 10, description: 'One pair' },
   [PatternType.NO_WIN]: { name: 'NO WIN', payout: 0, description: 'No winning pattern' }
 };
 
@@ -183,7 +185,7 @@ function getHighlightIndices(hash: string, type: PatternType): number[] {
       }
     }
   }
-  else if (type === PatternType.THREE_PAIR || type === PatternType.TWO_PAIR) {
+  else if (type === PatternType.THREE_PAIR || type === PatternType.TWO_PAIR || type === PatternType.ONE_PAIR) {
     // Highlight consecutive pairs only (e.g., "aa" and "bb" in "aa1bb2c")
     let i = 0;
     while (i < lowerHash.length - 1) {
@@ -272,11 +274,15 @@ export function detectPattern(hash: string): PatternResult {
   else if (countConsecutivePairs(lowerHash) === 2) {
     type = PatternType.TWO_PAIR;
   }
-  // Check for all numbers (break-even)
+  // Check for all numbers
   else if (isAllNumbers(lowerHash)) {
     type = PatternType.ALL_NUMBERS;
   }
-  // Everything else is no win (including one pair)
+  // Check for one consecutive pair
+  else if (countConsecutivePairs(lowerHash) === 1) {
+    type = PatternType.ONE_PAIR;
+  }
+  // Everything else is no win
   else {
     type = PatternType.NO_WIN;
   }
