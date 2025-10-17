@@ -1,4 +1,5 @@
 import { getApiUrl, getApiToken, isSyncEnabled } from './config.js';
+import { getFetch } from './utils/fetch-polyfill.js';
 
 // Fallback domains to try in order (if primary fails)
 const FALLBACK_DOMAINS = [
@@ -65,6 +66,7 @@ export interface PlayResponse {
 // Helper to try API call with fallback domains
 async function fetchWithFallback(endpoint: string, options: RequestInit): Promise<Response | null> {
   const configuredUrl = getApiUrl();
+  const fetchFn = await getFetch();
 
   // Build list of URLs to try: configured URL first, then fallbacks (excluding duplicates)
   const urlsToTry = [
@@ -75,7 +77,7 @@ async function fetchWithFallback(endpoint: string, options: RequestInit): Promis
   for (const baseUrl of urlsToTry) {
     try {
       const url = `${baseUrl.replace(/\/api$/, '')}/api${endpoint}`;
-      const response = await fetch(url, options);
+      const response = await fetchFn(url, options);
 
       if (response.ok) {
         return response;
@@ -156,12 +158,14 @@ export async function createToken(githubUsername: string): Promise<string | null
     });
 
     if (!response) {
+      console.error('Failed to reach API server. Please check your network connection.');
       return null;
     }
 
     const result = await response.json() as ApiResponse<{ token: string }>;
     return result.data?.token || null;
   } catch (error) {
+    console.error('API request failed:', (error as Error).message);
     return null;
   }
 }
