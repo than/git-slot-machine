@@ -5,11 +5,11 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "git-slot-machine": "./dist/index.js"
+    "git-slot-machine": "dist/index.js"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/than/git-slot-machine.git"
+    "url": "git+https://github.com/than/git-slot-machine.git"
   },
   "homepage": "https://gitslotmachine.com",
   "bugs": {
