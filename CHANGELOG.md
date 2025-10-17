@@ -37,7 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - THREE OF A KIND: 50 → 100
   - TWO PAIR: 50 → 25
   - ALL NUMBERS: 10 (unchanged, break-even)
-- ~99% return rate for sustainable long-term play
 
 ### Changed
 - Payout curve now properly reflects mathematical probabilities
