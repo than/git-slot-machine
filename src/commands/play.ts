@@ -3,6 +3,7 @@ import { animateSlotMachine, animateSmallMode } from '../animation/slotMachine.j
 import { getBalance, updateBalance, setBalance } from '../balance.js';
 import { sendPlayToAPI } from '../api.js';
 import { getRepoInfo, getGitHubUsername } from '../config.js';
+import { detectAmendGrinding, getAmendWarningMessage } from '../utils/amendDetector.js';
 import chalk from 'chalk';
 
 interface PlayOptions {
@@ -78,6 +79,10 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
     // Update balance locally
     let newBalance = updateBalance(hash.toLowerCase(), result.payout);
 
+    // Detect potential hash grinding
+    const amendDetection = detectAmendGrinding();
+    const warningMessage = getAmendWarningMessage(amendDetection);
+
     // Send to API and sync balance with server
     let shareUrl: string | undefined;
 
@@ -94,6 +99,8 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
         github_username: githubUsername,
         repo_owner: repoInfo.owner,
         repo_name: repoInfo.name,
+        suspicious: amendDetection.suspiciousActivity,
+        amend_count: amendDetection.recentAmendCount,
       };
 
       // Only send full hash if we have one (not in test mode)
@@ -141,6 +148,12 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
 
       const urlPadding = Math.floor((boxWidth - shareUrl.length) / 2);
       console.log(' '.repeat(urlPadding) + chalk.green.underline(shareUrl));
+    }
+
+    // Show warning if suspicious activity detected
+    if (warningMessage && !options.small) {
+      console.log();
+      console.log(chalk.yellow(warningMessage));
     }
 
   } catch (error) {
