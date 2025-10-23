@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-10-23
+
+### Added
+- **Hash grinding detection** - Detects and flags suspicious commit amending behavior
+  - Checks git reflog for commit amend patterns
+  - Flags commits with 5+ amends in a 5-minute window
+  - Sends suspicious activity flag and amend count to API
+  - Displays warning to users when suspicious activity is detected
+- **API: Suspicious activity tracking** - Tracks hash grinding attempts
+  - New `suspicious` and `amend_count` columns in plays table
+  - Stores and tracks flagged commits for review
+- **Artisan command: `play:remove`** - Safely remove plays and recalculate stats
+  - Removes specific plays by commit hash and username
+  - Recalculates all repository and user statistics
+  - Uses database transactions for safety
+- **Artisan command: `plays:suspicious`** - View flagged commits
+  - Lists all plays flagged for hash grinding
+  - Shows statistics and top offenders
+  - Filter by user with `--user` option
+  - Limit results with `--limit` option
+
+### Security
+- Prevents hash grinding exploitation by detecting and flagging suspicious amend patterns
+- All admin functions are terminal-based (secure for public repositories)
+
 ## [2.1.6] - 2025-10-17
 
 ### Added
