@@ -1,10 +1,20 @@
-import { detectPattern } from '../patterns.js';
+import { detectPattern, PatternType } from '../patterns.js';
 import { animateSlotMachine, animateSmallMode } from '../animation/slotMachine.js';
 import { getBalance, updateBalance, setBalance } from '../balance.js';
 import { sendPlayToAPI } from '../api.js';
 import { getRepoInfo, getGitHubUsername } from '../config.js';
 import { detectAmendGrinding, getAmendWarningMessage } from '../utils/amendDetector.js';
+import { checkSecret } from '../secrets.js';
 import chalk from 'chalk';
+
+function floodTerminal(emoji: string): void {
+  const cols = process.stdout.columns || 80;
+  const rows = 5;
+  const line = emoji.repeat(Math.floor(cols / 2));
+  for (let i = 0; i < rows; i++) {
+    console.log(line);
+  }
+}
 
 interface PlayOptions {
   small?: boolean;
@@ -16,8 +26,31 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
     // Get balance before playing
     const balanceBefore = getBalance();
 
-    // Detect pattern
-    const result = detectPattern(hash);
+    // Check for secret combos first
+    const secret = checkSecret(hash);
+
+    // If secret with emoji flood, do it before anything else
+    if (secret?.flood && secret.emoji) {
+      if (options.small) {
+        // Small mode - inline emoji burst
+        process.stdout.write(secret.emoji.repeat(10) + ' ');
+      } else {
+        console.clear();
+        floodTerminal(secret.emoji);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+    }
+
+    // Detect pattern (or use secret)
+    const result = secret
+      ? {
+          type: PatternType.SECRET,
+          name: secret.name,
+          payout: secret.payout,
+          description: '???',
+          highlightIndices: [0, 1, 2, 3, 4, 5, 6],
+        }
+      : detectPattern(hash);
 
     // Animate based on mode
     const config = {

@@ -1,4 +1,5 @@
 export enum PatternType {
+  SECRET = 'SECRET', // Hidden combos
   LUCKY_SEVENS = 'LUCKY_SEVENS', // Secret: 7777777
   ALL_SAME = 'ALL_SAME',
   SIX_OF_KIND = 'SIX_OF_KIND',
@@ -29,6 +30,7 @@ export interface PatternResult {
 }
 
 const PAYOUTS: Record<PatternType, { name: string; payout: number; description: string }> = {
+  [PatternType.SECRET]: { name: 'SECRET', payout: 0, description: '???' }, // Placeholder, actual values from secrets.ts
   [PatternType.LUCKY_SEVENS]: { name: 'LUCKY SEVENS', payout: 1000000, description: 'The ultimate jackpot: 7777777' },
   [PatternType.ALL_SAME]: { name: 'JACKPOT', payout: 100000, description: 'All same character' },
   [PatternType.STRAIGHT_7]: { name: 'LUCKY SEVEN', payout: 50000, description: 'Seven sequential hex digits' },
