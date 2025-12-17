@@ -1,4 +1,5 @@
 export enum PatternType {
+  LUCKY_SEVENS = 'LUCKY_SEVENS', // Secret: 7777777
   ALL_SAME = 'ALL_SAME',
   SIX_OF_KIND = 'SIX_OF_KIND',
   STRAIGHT_7 = 'STRAIGHT_7',
@@ -9,7 +10,8 @@ export enum PatternType {
   ALL_LETTERS = 'ALL_LETTERS',
   STRAIGHT_5 = 'STRAIGHT_5',
   THREE_OF_KIND_PLUS_THREE = 'THREE_OF_KIND_PLUS_THREE', // 3-3-1
-  FULL_HOUSE = 'FULL_HOUSE', // 4-2-1 or 3-2-2
+  FULLER_HOUSE = 'FULLER_HOUSE', // 3-2-2
+  FULL_HOUSE = 'FULL_HOUSE', // 3-2-1-1
   THREE_PAIR = 'THREE_PAIR',
   THREE_OF_KIND = 'THREE_OF_KIND',
   TWO_PAIR = 'TWO_PAIR',
@@ -27,22 +29,24 @@ export interface PatternResult {
 }
 
 const PAYOUTS: Record<PatternType, { name: string; payout: number; description: string }> = {
+  [PatternType.LUCKY_SEVENS]: { name: 'LUCKY SEVENS', payout: 1000000, description: 'The ultimate jackpot: 7777777' },
   [PatternType.ALL_SAME]: { name: 'JACKPOT', payout: 100000, description: 'All same character' },
-  [PatternType.STRAIGHT_7]: { name: 'LUCKY SEVEN', payout: 50000, description: 'Seven in a row' },
-  [PatternType.STRAIGHT_6]: { name: 'BIG STRAIGHT', payout: 25000, description: 'Six in a row' },
+  [PatternType.STRAIGHT_7]: { name: 'LUCKY SEVEN', payout: 50000, description: 'Seven sequential hex digits' },
+  [PatternType.STRAIGHT_6]: { name: 'BIG STRAIGHT', payout: 25000, description: 'Six sequential hex digits' },
   [PatternType.SIX_OF_KIND]: { name: 'HEXTET', payout: 10000, description: 'Six of a kind' },
   [PatternType.FULLEST_HOUSE]: { name: 'FULLEST HOUSE', payout: 5000, description: '4 + 3 of a kind' },
-  [PatternType.STRAIGHT_5]: { name: 'STRAIGHT', payout: 2500, description: 'Five in a row' },
+  [PatternType.STRAIGHT_5]: { name: 'STRAIGHT', payout: 2500, description: 'Five sequential hex digits' },
   [PatternType.FIVE_OF_KIND]: { name: 'FIVE OF A KIND', payout: 2000, description: 'Five of a kind' },
   [PatternType.THREE_OF_KIND_PLUS_THREE]: { name: 'DOUBLE TRIPLE', payout: 1000, description: 'Two three of a kinds' },
-  [PatternType.THREE_PAIR]: { name: 'THREE PAIR', payout: 500, description: 'Three pairs' },
-  [PatternType.FULL_HOUSE]: { name: 'FULL HOUSE', payout: 300, description: 'Three and two of a kind' },
+  [PatternType.THREE_PAIR]: { name: 'THREE PAIR', payout: 500, description: 'Three consecutive pairs' },
+  [PatternType.FULLER_HOUSE]: { name: 'FULLER HOUSE', payout: 400, description: '3 + 2 + 2 of a kind' },
+  [PatternType.FULL_HOUSE]: { name: 'FULL HOUSE', payout: 50, description: '3 + 2 of a kind' },
   [PatternType.ALL_LETTERS]: { name: 'ALPHABET SOUP', payout: 250, description: 'Only letters (a-f)' },
   [PatternType.FOUR_OF_KIND]: { name: 'FOUR OF A KIND', payout: 200, description: 'Four of a kind' },
-  [PatternType.THREE_OF_KIND]: { name: 'THREE OF A KIND', payout: 100, description: 'Three of a kind' },
+  [PatternType.THREE_OF_KIND]: { name: 'THREE OF A KIND', payout: 25, description: 'Three of a kind' },
   [PatternType.ALL_NUMBERS]: { name: 'ALL NUMBERS', payout: 50, description: 'Only numbers (0-9)' },
-  [PatternType.TWO_PAIR]: { name: 'TWO PAIR', payout: 25, description: 'Two pairs' },
-  [PatternType.ONE_PAIR]: { name: 'ONE PAIR', payout: 10, description: 'One pair' },
+  [PatternType.TWO_PAIR]: { name: 'TWO PAIR', payout: 25, description: 'Two consecutive pairs' },
+  [PatternType.ONE_PAIR]: { name: 'ONE PAIR', payout: 10, description: 'One consecutive pair' },
   [PatternType.NO_WIN]: { name: 'NO WIN', payout: 0, description: 'No winning pattern' }
 };
 
@@ -145,8 +149,9 @@ function getHighlightIndices(hash: string, type: PatternType): number[] {
     }
   }
 
-  // For all letters or all numbers, highlight everything
-  if (type === PatternType.ALL_LETTERS || type === PatternType.ALL_NUMBERS || type === PatternType.ALL_SAME) {
+  // For all letters, all numbers, all same, or lucky sevens - highlight everything
+  if (type === PatternType.ALL_LETTERS || type === PatternType.ALL_NUMBERS ||
+      type === PatternType.ALL_SAME || type === PatternType.LUCKY_SEVENS) {
     return [0, 1, 2, 3, 4, 5, 6];
   }
 
@@ -172,8 +177,8 @@ function getHighlightIndices(hash: string, type: PatternType): number[] {
       }
     }
   }
-  else if (type === PatternType.FULLEST_HOUSE || type === PatternType.FULL_HOUSE ||
-           type === PatternType.THREE_OF_KIND_PLUS_THREE) {
+  else if (type === PatternType.FULLEST_HOUSE || type === PatternType.FULLER_HOUSE ||
+           type === PatternType.FULL_HOUSE || type === PatternType.THREE_OF_KIND_PLUS_THREE) {
     // Highlight all paired/tripled characters
     for (const [char, count] of counts.entries()) {
       if (count >= 2) {
@@ -218,8 +223,12 @@ export function detectPattern(hash: string): PatternResult {
   // Detect pattern - check in order of rarity/value
   let type: PatternType;
 
+  // Check for the secret ultimate jackpot: 7777777
+  if (lowerHash === '7777777') {
+    type = PatternType.LUCKY_SEVENS;
+  }
   // Check for all same first (highest value)
-  if (distribution[0] === 7) {
+  else if (distribution[0] === 7) {
     type = PatternType.ALL_SAME;
   }
   // Check for 6 of a kind
@@ -258,7 +267,11 @@ export function detectPattern(hash: string): PatternResult {
   else if (distribution[0] === 3 && distribution[1] === 3) {
     type = PatternType.THREE_OF_KIND_PLUS_THREE;
   }
-  // Check for full house (3-2-2 or 3-2-1-1)
+  // Check for fuller house (3-2-2)
+  else if (distribution[0] === 3 && distribution[1] === 2 && distribution[2] === 2) {
+    type = PatternType.FULLER_HOUSE;
+  }
+  // Check for full house (3-2-1-1)
   else if (distribution[0] === 3 && distribution[1] === 2) {
     type = PatternType.FULL_HOUSE;
   }
