@@ -16,8 +16,8 @@ fi
 
 # In Claude Code, skip animation frames and show only the result line
 if [ -n "$CLAUDECODE" ]; then
-  $GSM play "$HASH" --small 2>&1 | tail -1
+  "$GSM" play "$HASH" --small 2>/dev/null | tail -1
 else
-  $GSM play "$HASH" --small
+  "$GSM" play "$HASH" --small
 fi
 `;
