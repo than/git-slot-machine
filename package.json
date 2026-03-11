@@ -1,12 +1,17 @@
 {
   "name": "git-slot-machine",
-  "version": "2.3.2",
+  "version": "2.4.0",
   "description": "Turn your git commits into a slot machine game! CLI tool with global leaderboards and win streaks.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
     "git-slot-machine": "dist/index.js"
   },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "scripts"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/than/git-slot-machine.git"
