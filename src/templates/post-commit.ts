@@ -4,20 +4,12 @@ export const POST_COMMIT_HOOK = `#!/bin/sh
 # Get the commit hash
 HASH=$(git rev-parse --short=7 HEAD)
 
-# Find git-slot-machine binary
+# Check if git-slot-machine is installed
 if command -v git-slot-machine >/dev/null 2>&1; then
-  GSM=git-slot-machine
+  git-slot-machine play "$HASH" --small
 elif [ -f "./node_modules/.bin/git-slot-machine" ]; then
-  GSM=./node_modules/.bin/git-slot-machine
+  ./node_modules/.bin/git-slot-machine play "$HASH" --small
 else
   echo "git-slot-machine not found, skipping animation"
-  exit 0
-fi
-
-# In Claude Code, skip animation frames and show only the result line
-if [ -n "$CLAUDECODE" ]; then
-  "$GSM" play "$HASH" --small 2>/dev/null | tail -1
-else
-  "$GSM" play "$HASH" --small
 fi
 `;

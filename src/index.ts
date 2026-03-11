@@ -10,13 +10,17 @@ import { testCommand } from './commands/test.js';
 import { authLoginCommand, authLogoutCommand, authStatusCommand } from './commands/auth.js';
 import { syncCommand } from './commands/sync.js';
 import { configGetCommand, configSetCommand } from './commands/config.js';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json');
 
 const program = new Command();
 
 program
   .name('git-slot-machine')
   .description('Git commit hash slot machine')
-  .version('2.2.0', '-v, --version', 'Output the current version');
+  .version(version, '-v, --version', 'Output the current version');
 
 program
   .command('play')
