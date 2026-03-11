@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2026-03-11
+
+### Fixed
+- Post-commit hook now suppresses animation frames when running under Claude Code (`CLAUDECODE=1`)
+  - Game still plays, balance updates, and API syncs normally
+  - Only the final result line is shown, saving LLM context tokens
+  - Normal terminal usage is completely unchanged
+
 ## [2.3.0] - 2025-12-17
 
 ### Added
