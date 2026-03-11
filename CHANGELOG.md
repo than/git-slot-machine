@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.2] - 2026-03-11
+
+### Fixed
+- Skip slot machine animation in non-interactive environments (`CLAUDECODE=1`, `CI=1`)
+  - Animation skip is now built into the CLI itself — no hook changes needed
+  - Game still plays, balance updates, and API syncs normally
+  - Works automatically in all repos on upgrade
+- `--version` flag now reads from `package.json` instead of a hardcoded string
+
 ## [2.3.1] - 2026-03-11
 
 ### Fixed

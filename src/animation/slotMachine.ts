@@ -77,76 +77,81 @@ function drawSlotMachine(chars: string[], spinning: boolean, highlightIndices: n
 export async function animateSlotMachine(config: SlotConfig): Promise<void> {
   const { finalHash, patternResult } = config;
   const highlightIndices = patternResult?.highlightIndices || [];
+  const isCI = !!process.env.CLAUDECODE || !!process.env.CI;
 
-  // Clear screen
-  console.clear();
+  const finalChars = finalHash.split('');
 
-  // Initialize with random characters
-  let currentChars = Array(7).fill(0).map(() => getRandomHexChar());
+  if (!isCI) {
+    // Clear screen
+    console.clear();
 
-  // Animate spinning
-  for (let frame = 0; frame < FRAMES; frame++) {
-    // Gradually slow down and settle on final hash
-    const progress = frame / FRAMES;
+    // Initialize with random characters
+    let currentChars = Array(7).fill(0).map(() => getRandomHexChar());
 
-    if (progress < 0.9) {
-      // Still spinning - show random
-      currentChars = currentChars.map(() => getRandomHexChar());
-    } else {
-      // Start settling - reveal characters one by one
-      const revealIndex = Math.floor((progress - 0.9) / 0.1 * 7);
-      for (let i = 0; i < revealIndex; i++) {
-        currentChars[i] = finalHash[i];
+    // Animate spinning
+    for (let frame = 0; frame < FRAMES; frame++) {
+      // Gradually slow down and settle on final hash
+      const progress = frame / FRAMES;
+
+      if (progress < 0.9) {
+        // Still spinning - show random
+        currentChars = currentChars.map(() => getRandomHexChar());
+      } else {
+        // Start settling - reveal characters one by one
+        const revealIndex = Math.floor((progress - 0.9) / 0.1 * 7);
+        for (let i = 0; i < revealIndex; i++) {
+          currentChars[i] = finalHash[i];
+        }
+      }
+
+      // Redraw
+      console.clear();
+      drawSlotMachine(currentChars, progress < 0.9);
+
+      // Wait for next frame
+      await new Promise(resolve => setTimeout(resolve, ANIMATION_SPEED));
+    }
+
+    // Flash 3 times if there are highlighted characters
+    if (highlightIndices.length > 0) {
+      for (let flashCount = 0; flashCount < 3; flashCount++) {
+        console.clear();
+        drawSlotMachine(finalChars, false, highlightIndices, true);
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        console.clear();
+        drawSlotMachine(finalChars, false, highlightIndices, false);
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
     }
 
-    // Redraw
+    // Steady state
     console.clear();
-    drawSlotMachine(currentChars, progress < 0.9);
-
-    // Wait for next frame
-    await new Promise(resolve => setTimeout(resolve, ANIMATION_SPEED));
   }
 
-  // Final reveal with flashing
-  const finalChars = finalHash.split('');
-
-  // Flash 3 times if there are highlighted characters
-  if (highlightIndices.length > 0) {
-    for (let flashCount = 0; flashCount < 3; flashCount++) {
-      // Flash on
-      console.clear();
-      drawSlotMachine(finalChars, false, highlightIndices, true);
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      // Flash off
-      console.clear();
-      drawSlotMachine(finalChars, false, highlightIndices, false);
-      await new Promise(resolve => setTimeout(resolve, 200));
-    }
-  }
-
-  // Steady state
-  console.clear();
   drawSlotMachine(finalChars, false, highlightIndices, false);
 }
 
 export async function animateSmallMode(config: SlotConfig): Promise<void> {
   const { finalHash, patternResult } = config;
   const highlightIndices = patternResult?.highlightIndices || [];
+  const isCI = !!process.env.CLAUDECODE || !!process.env.CI;
 
-  // Single line, rapid character flicker
-  process.stdout.write(chalk.cyan('🎰 '));
+  if (!isCI) {
+    // Single line, rapid character flicker
+    process.stdout.write(chalk.cyan('🎰 '));
 
-  for (let frame = 0; frame < 20; frame++) {
-    const chars = Array(7).fill(0).map(() => getRandomHexChar()).join('');
+    for (let frame = 0; frame < 20; frame++) {
+      const chars = Array(7).fill(0).map(() => getRandomHexChar()).join('');
+      clearLine();
+      process.stdout.write(chalk.cyan('🎰 ') + chalk.rgb(255, 255, 255)(chars));
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
     clearLine();
-    process.stdout.write(chalk.cyan('🎰 ') + chalk.rgb(255, 255, 255)(chars));
-    await new Promise(resolve => setTimeout(resolve, 50));
   }
 
   // Final with highlighting - don't add newline, let the caller add result info
-  clearLine();
   const display = finalHash.split('').map((char, i) => {
     if (highlightIndices.includes(i)) {
       return chalk.bgRgb(255, 255, 0).rgb(0, 0, 0).bold(char);
