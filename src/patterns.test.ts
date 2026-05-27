@@ -24,12 +24,30 @@ describe('Pattern Detection', () => {
   });
 
   it('detects one pair', () => {
-    const result = detectPattern('aa12345');
+    // Avoid a 5+ sequential run, which would rank as a STRAIGHT instead.
+    const result = detectPattern('aa13579');
     expect(result.type).toBe(PatternType.ONE_PAIR);
   });
 
-  it('detects no win', () => {
+  it('detects a 5-digit straight', () => {
+    const result = detectPattern('12345ab');
+    expect(result.type).toBe(PatternType.STRAIGHT_5);
+    expect(result.payout).toBeGreaterThan(0);
+  });
+
+  it('detects a 6-digit straight', () => {
+    const result = detectPattern('123456a');
+    expect(result.type).toBe(PatternType.STRAIGHT_6);
+  });
+
+  it('detects a 7-digit straight', () => {
     const result = detectPattern('1234567');
+    expect(result.type).toBe(PatternType.STRAIGHT_7);
+  });
+
+  it('detects no win', () => {
+    // Mixed hex with no pair, run, or all-letters/all-numbers grouping.
+    const result = detectPattern('a1b2c3d');
     expect(result.type).toBe(PatternType.NO_WIN);
     expect(result.payout).toBe(0);
   });

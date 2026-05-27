@@ -1,0 +1,5 @@
+# pnpm settings (pnpm 10+ moved these out of package.json's "pnpm" field).
+# Allow this trusted native dependency (used by the ESLint toolchain) to run
+# its install build script; pnpm blocks dependency build scripts by default.
+allowBuilds:
+  unrs-resolver: true

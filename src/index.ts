@@ -27,7 +27,7 @@ program
   .description('Play the slot machine with a git hash')
   .argument('<hash>', '7-character git commit hash')
   .option('-s, --small', 'Single line output')
-  .action(async (hash: string, options: any) => {
+  .action(async (hash: string, options: { small?: boolean }) => {
     await playCommand(hash, options);
   });
 
@@ -35,7 +35,7 @@ program
   .command('spin')
   .description('Play with the current git commit hash')
   .option('-s, --small', 'Single line output')
-  .action(async (options: any) => {
+  .action(async (options: { small?: boolean }) => {
     await spinCommand(options);
   });
 
@@ -55,7 +55,7 @@ program
   .command('test')
   .description('Play with a random 7-character hash')
   .option('-s, --small', 'Single line output')
-  .action(async (options: any) => {
+  .action(async (options: { small?: boolean }) => {
     await testCommand(options);
   });
 

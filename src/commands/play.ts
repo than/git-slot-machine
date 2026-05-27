@@ -1,7 +1,7 @@
 import { detectPattern, PatternType } from '../patterns.js';
 import { animateSlotMachine, animateSmallMode } from '../animation/slotMachine.js';
 import { getBalance, updateBalance, setBalance } from '../balance.js';
-import { sendPlayToAPI } from '../api.js';
+import { sendPlayToAPI, PlayData } from '../api.js';
 import { getRepoInfo, getGitHubUsername } from '../config.js';
 import { detectAmendGrinding, getAmendWarningMessage } from '../utils/amendDetector.js';
 import { checkSecret } from '../secrets.js';
@@ -120,7 +120,7 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
     let shareUrl: string | undefined;
 
     if (repoInfo && githubUsername) {
-      const playData: any = {
+      const playData: PlayData = {
         commit_hash: hash.toLowerCase(),
         pattern_type: result.type,
         pattern_name: result.name,
