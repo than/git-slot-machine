@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { execSync } from 'child_process';
 
 interface BalanceData {
   repos: Record<string, {
@@ -16,7 +17,6 @@ const BALANCE_FILE = path.join(os.homedir(), '.git-slot-machine-balance.json');
 
 function getRepoPath(): string | null {
   try {
-    const { execSync } = require('child_process');
     return execSync('git rev-parse --show-toplevel', {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe']

@@ -9,7 +9,7 @@ export function getCurrentCommitHash(): string {
 
     return fullHash.substring(0, 7);
   } catch (error) {
-    throw new Error('Not a git repository or no commits yet');
+    throw new Error('Not a git repository or no commits yet', { cause: error });
   }
 }
 
@@ -22,7 +22,7 @@ export function getCurrentCommitFullHash(): string {
 
     return fullHash;
   } catch (error) {
-    throw new Error('Not a git repository or no commits yet');
+    throw new Error('Not a git repository or no commits yet', { cause: error });
   }
 }
 
