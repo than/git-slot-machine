@@ -1,0 +1,68 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+jobs:
+  claude-review:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            You are an expert TypeScript reviewer for a Node.js CLI tool. Read CLAUDE.md first if it exists, and check package.json for the current toolchain (package manager, scripts, engines).
+
+            Git Slot Machine is a CLI that turns each git commit into a slot-machine pull: it reads the first 7 hex characters of the commit hash, awards a payout based on the detected pattern, installs a post-commit hook, and syncs results to a global leaderboard API. It is published to npm and runs inside users' repositories and in CI.
+
+            If the PR body references issues (e.g., "Closes #N"), read them with `gh issue view N` for context before reviewing.
+
+            If this PR already has prior review comments (a re-review after new commits), read them with `gh pr view ${{ github.event.pull_request.number }} --json comments` and treat them as context. Acknowledge or build on what previous reviews said and how the author responded — don't re-flag points that were already addressed, and don't restate issues the author pushed back on without engaging with their reasoning.
+
+            Review this PR with the rigor of a senior engineer. Focus on:
+
+            **Correctness (highest priority):**
+            - Pattern detection (src/patterns.ts): detection order and payout values must stay in sync with the backend (gitslotmachine.com app/Services/PatternDetector.php) so the CLI and server agree on outcomes. Flag any divergence.
+            - The post-commit hook runs after every commit — it must NEVER break or block the user's commit. Failures must be swallowed.
+            - API sync must fail silently when offline or unauthenticated; it must never throw, hang, or disrupt the local play.
+
+            **TypeScript quality:**
+            - Avoid `any`; prefer precise types. Respect the project's tsconfig (strict mode).
+            - ESM correctness: relative imports keep their explicit extensions; use native `fetch` on supported Node versions.
+            - No unhandled promise rejections.
+
+            **CLI UX & safety:**
+            - Output must degrade gracefully in non-interactive environments (e.g. CI / Claude Code) — no animation spam.
+            - No secrets or API tokens written to logs or committed files.
+            - commander command/option/action wiring is correct.
+
+            **What NOT to flag:**
+            - Features or refactors beyond the PR's stated scope
+            - Formatting (ESLint/Prettier handle it)
+            - Intentional design decisions
+
+            Be direct and constructive. If the PR is solid, say so briefly. If there are real problems, be specific about what is wrong and what the fix should be.
+
+            IMPORTANT: Do NOT use #N (e.g. #1, #2, #3) to number your feedback items — GitHub auto-links #N to issue numbers. Use bullet points, letters (a, b, c), or descriptive headers instead.
+
+            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+
+          claude_args: '--model opus --allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
