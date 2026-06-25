@@ -26,6 +26,7 @@
     "dev": "tsc --watch",
     "test": "jest",
     "lint": "eslint src",
+    "prepublishOnly": "npm run build",
     "postinstall": "node scripts/postinstall.js"
   },
   "keywords": [
