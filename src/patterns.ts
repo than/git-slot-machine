@@ -30,25 +30,27 @@ export interface PatternResult {
 }
 
 const PAYOUTS: Record<PatternType, { name: string; payout: number; description: string }> = {
+  // Payouts are ruleset v3 — kept in sync with the canonical src/patterns.json (a Jest
+  // contract test fails on any drift). See PATTERN-DETECTION-SPEC.md.
   [PatternType.SECRET]: { name: 'SECRET', payout: 0, description: '???' }, // Placeholder, actual values from secrets.ts
-  [PatternType.LUCKY_SEVENS]: { name: 'LUCKY SEVENS', payout: 1000000, description: 'The ultimate jackpot: 7777777' },
-  [PatternType.ALL_SAME]: { name: 'JACKPOT', payout: 100000, description: 'All same character' },
-  [PatternType.STRAIGHT_7]: { name: 'LUCKY SEVEN', payout: 50000, description: 'Seven sequential hex digits' },
-  [PatternType.STRAIGHT_6]: { name: 'BIG STRAIGHT', payout: 25000, description: 'Six sequential hex digits' },
-  [PatternType.SIX_OF_KIND]: { name: 'HEXTET', payout: 10000, description: 'Six of a kind' },
-  [PatternType.FULLEST_HOUSE]: { name: 'FULLEST HOUSE', payout: 5000, description: '4 + 3 of a kind' },
-  [PatternType.STRAIGHT_5]: { name: 'STRAIGHT', payout: 2500, description: 'Five sequential hex digits' },
-  [PatternType.FIVE_OF_KIND]: { name: 'FIVE OF A KIND', payout: 2000, description: 'Five of a kind' },
-  [PatternType.THREE_OF_KIND_PLUS_THREE]: { name: 'DOUBLE TRIPLE', payout: 1000, description: 'Two three of a kinds' },
-  [PatternType.THREE_PAIR]: { name: 'THREE PAIR', payout: 500, description: 'Three consecutive pairs' },
-  [PatternType.FULLER_HOUSE]: { name: 'FULLER HOUSE', payout: 400, description: '3 + 2 + 2 of a kind' },
-  [PatternType.FULL_HOUSE]: { name: 'FULL HOUSE', payout: 50, description: '3 + 2 of a kind' },
-  [PatternType.ALL_LETTERS]: { name: 'ALPHABET SOUP', payout: 250, description: 'Only letters (a-f)' },
-  [PatternType.FOUR_OF_KIND]: { name: 'FOUR OF A KIND', payout: 200, description: 'Four of a kind' },
+  [PatternType.LUCKY_SEVENS]: { name: 'LUCKY SEVENS', payout: 1000000, description: 'The mythic jackpot: 7777777' },
+  [PatternType.ALL_SAME]: { name: 'JACKPOT', payout: 250000, description: 'All same character' },
+  [PatternType.STRAIGHT_7]: { name: 'LUCKY SEVEN', payout: 100000, description: 'Seven sequential hex digits' },
+  [PatternType.STRAIGHT_6]: { name: 'BIG STRAIGHT', payout: 50000, description: 'Six sequential hex digits' },
+  [PatternType.SIX_OF_KIND]: { name: 'HEXTET', payout: 25000, description: 'Six of a kind' },
+  [PatternType.FULLEST_HOUSE]: { name: 'FULLEST HOUSE', payout: 10000, description: '4 + 3 of a kind' },
+  [PatternType.STRAIGHT_5]: { name: 'STRAIGHT', payout: 5000, description: 'Five sequential hex digits' },
+  [PatternType.FIVE_OF_KIND]: { name: 'FIVE OF A KIND', payout: 2500, description: 'Five of a kind' },
+  [PatternType.THREE_OF_KIND_PLUS_THREE]: { name: 'DOUBLE TRIPLE', payout: 750, description: 'Two three of a kinds' },
+  [PatternType.THREE_PAIR]: { name: 'THREE PAIR', payout: 1000, description: 'Three adjacent pairs' },
+  [PatternType.FULLER_HOUSE]: { name: 'FULLER HOUSE', payout: 250, description: '3 + 2 + 2 of a kind' },
+  [PatternType.FULL_HOUSE]: { name: 'FULL HOUSE', payout: 25, description: '3 + 2 of a kind' },
+  [PatternType.ALL_LETTERS]: { name: 'ALPHABET SOUP', payout: 500, description: 'Only letters (a-f)' },
+  [PatternType.FOUR_OF_KIND]: { name: 'FOUR OF A KIND', payout: 100, description: 'Four of a kind' },
   [PatternType.THREE_OF_KIND]: { name: 'THREE OF A KIND', payout: 25, description: 'Three of a kind' },
-  [PatternType.ALL_NUMBERS]: { name: 'ALL NUMBERS', payout: 50, description: 'Only numbers (0-9)' },
-  [PatternType.TWO_PAIR]: { name: 'TWO PAIR', payout: 25, description: 'Two consecutive pairs' },
-  [PatternType.ONE_PAIR]: { name: 'ONE PAIR', payout: 10, description: 'One consecutive pair' },
+  [PatternType.ALL_NUMBERS]: { name: 'ALL NUMBERS', payout: 30, description: 'Only numbers (0-9)' },
+  [PatternType.TWO_PAIR]: { name: 'TWO PAIR', payout: 50, description: 'Two adjacent pairs' },
+  [PatternType.ONE_PAIR]: { name: 'ONE PAIR', payout: 10, description: 'One adjacent pair' },
   [PatternType.NO_WIN]: { name: 'NO WIN', payout: 0, description: 'No winning pattern' }
 };
 
