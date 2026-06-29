@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Payout ruleset v3** — every payout rebalanced against exact, enumerated odds (all 16⁷
   hashes). Payouts now follow true rarity monotonically, with intentional themed bonuses
-  (ALL NUMBERS rides rich, straights run a touch hot). RTP ≈ 107%.
+  (ALL NUMBERS rides rich, straights run a touch hot). RTP ≈ 109%.
 
   | Pattern | v2 | v3 |
   |---|--:|--:|
