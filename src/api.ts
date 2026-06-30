@@ -170,6 +170,31 @@ export async function createToken(githubUsername: string): Promise<string | null
   }
 }
 
+export interface RulesetVersion {
+  version: number;
+  hash: string;
+}
+
+// Fetch the server's current ruleset version + content hash, for drift detection.
+// Fail-open: returns null on any network/parse error so the post-commit flow never blocks.
+export async function getRulesetVersion(): Promise<RulesetVersion | null> {
+  try {
+    const response = await fetchWithFallback('/ruleset-version', {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+    });
+
+    if (!response) {
+      return null;
+    }
+
+    const result = await response.json() as ApiResponse<RulesetVersion>;
+    return result.data || null;
+  } catch {
+    return null;
+  }
+}
+
 // Verify token is valid
 export async function verifyToken(token: string): Promise<boolean> {
   try {

@@ -1,6 +1,6 @@
 {
   "name": "git-slot-machine",
-  "version": "2.4.1",
+  "version": "3.0.0",
   "description": "Turn your git commits into a slot machine game! CLI tool with global leaderboards and win streaks.",
   "type": "module",
   "packageManager": "pnpm@11.4.0",
@@ -25,6 +25,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "test": "jest",
+    "verify:odds": "node scripts/verify-odds.mjs",
     "lint": "eslint src",
     "prepublishOnly": "npm run build",
     "postinstall": "node scripts/postinstall.js"
