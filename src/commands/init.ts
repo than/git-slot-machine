@@ -192,6 +192,9 @@ export async function initCommand(): Promise<void> {
     // Ask if they want to play as org or personal username
     const repoOwner = repoInfo.owner;
 
+    // Username to authenticate as; may differ from the global personal identity
+    let authUsername = githubUsername;
+
     // Only ask if repo owner is different from personal username and not in privacy mode
     if (!usePrivacyMode && repoOwner.toLowerCase() !== githubUsername.toLowerCase()) {
       console.log(chalk.cyan('Who should get credit for commits in this repo?'));
@@ -209,8 +212,8 @@ export async function initCommand(): Promise<void> {
         console.log(chalk.green(`✓ Commits in this repo will be credited to ${repoOwner}`));
         console.log();
 
-        // Update githubUsername for authentication
-        githubUsername = repoOwner;
+        // Authenticate as the org for this repo only; global identity is unchanged
+        authUsername = repoOwner;
       } else {
         // Play as personal username (default)
         console.log(chalk.green(`✓ Commits in this repo will be credited to ${githubUsername}`));
@@ -221,14 +224,14 @@ export async function initCommand(): Promise<void> {
     // Authenticate
     console.log(chalk.dim('Authenticating...'));
     try {
-      await authLoginCommand(githubUsername);
+      await authLoginCommand(authUsername, authUsername === githubUsername);
       console.log(chalk.green('✓ You\'re on the leaderboard!'));
       console.log(chalk.dim('View it at: https://gitslotmachine.com'));
       console.log();
     } catch (error) {
       console.log(chalk.yellow('⚠️  Authentication failed'));
       console.log(chalk.dim('Your commits will work locally, but won\'t appear on the leaderboard'));
-      console.log(chalk.dim(`Try again: git-slot-machine login ${githubUsername}`));
+      console.log(chalk.dim(`Try again: git-slot-machine login ${authUsername}`));
       console.log();
     }
   }

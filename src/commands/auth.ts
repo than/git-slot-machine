@@ -1,8 +1,19 @@
 import chalk from 'chalk';
 import { createToken, logout as apiLogout, verifyToken } from '../api.js';
-import { setApiToken, clearApiToken, getApiToken, getApiUrl, setGitHubUsername } from '../config.js';
+import {
+  setApiToken,
+  clearApiToken,
+  getApiToken,
+  getApiUrl,
+  setGitHubUsername,
+  getGitHubUsername,
+  getAuthenticatedUsernames,
+} from '../config.js';
 
-export async function authLoginCommand(githubUsername: string): Promise<void> {
+export async function authLoginCommand(
+  githubUsername: string,
+  persistGlobalUsername: boolean = true
+): Promise<void> {
   try {
     console.log(chalk.dim(`Generating token for ${githubUsername}...`));
 
@@ -14,9 +25,12 @@ export async function authLoginCommand(githubUsername: string): Promise<void> {
       process.exit(1);
     }
 
-    // Save token and username
-    setApiToken(token);
-    setGitHubUsername(githubUsername);
+    // Save token under its own identity; only overwrite the global
+    // username for a real personal login
+    setApiToken(token, githubUsername);
+    if (persistGlobalUsername) {
+      setGitHubUsername(githubUsername);
+    }
 
     console.log(chalk.green('Successfully authenticated!'));
     console.log(chalk.dim(`Token saved. API URL: ${getApiUrl()}`));
@@ -38,6 +52,7 @@ export async function authLoginCommand(githubUsername: string): Promise<void> {
 export async function authLogoutCommand(): Promise<void> {
   try {
     const token = getApiToken();
+    const username = getGitHubUsername();
 
     if (!token) {
       console.log(chalk.yellow('Not currently authenticated.'));
@@ -47,10 +62,15 @@ export async function authLogoutCommand(): Promise<void> {
     // Try to revoke token on server
     await apiLogout();
 
-    // Clear local token
+    // Clear local token for this identity only
     clearApiToken();
 
-    console.log(chalk.green('Successfully logged out.'));
+    console.log(chalk.green(`Successfully logged out${username ? ` as ${username}` : ''}.`));
+
+    const remaining = getAuthenticatedUsernames();
+    if (remaining.length > 0) {
+      console.log(chalk.dim(`Still authenticated as: ${remaining.join(', ')}`));
+    }
   } catch (error) {
     console.error(chalk.red(`Error: ${(error as Error).message}`));
     process.exit(1);
@@ -61,13 +81,18 @@ export async function authStatusCommand(): Promise<void> {
   try {
     const token = getApiToken();
     const apiUrl = getApiUrl();
+    const username = getGitHubUsername();
+    const authenticated = getAuthenticatedUsernames();
 
     if (!token) {
-      console.log(chalk.yellow('Not authenticated.'));
+      console.log(chalk.yellow(`Not authenticated${username ? ` as ${username}` : ''}.`));
       console.log(chalk.dim(`API URL: ${apiUrl}`));
+      if (authenticated.length > 0) {
+        console.log(chalk.dim(`Tokens held for: ${authenticated.join(', ')}`));
+      }
       console.log();
       console.log('To authenticate, run:');
-      console.log(chalk.cyan('  git-slot-machine auth login <your-github-username>'));
+      console.log(chalk.cyan(`  git-slot-machine auth login ${username || '<your-github-username>'}`));
       return;
     }
 
@@ -75,9 +100,12 @@ export async function authStatusCommand(): Promise<void> {
     const isValid = await verifyToken(token);
 
     if (isValid) {
-      console.log(chalk.green('Authenticated'));
+      console.log(chalk.green(`Authenticated as ${username}`));
       console.log(chalk.dim(`API URL: ${apiUrl}`));
       console.log(chalk.dim(`Token: ${token.substring(0, 10)}...`));
+      if (authenticated.length > 1) {
+        console.log(chalk.dim(`Tokens held for: ${authenticated.join(', ')}`));
+      }
     } else {
       console.log(chalk.red('Authentication expired or invalid.'));
       console.log(chalk.dim(`API URL: ${apiUrl}`));

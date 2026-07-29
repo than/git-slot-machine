@@ -9,6 +9,7 @@ import { balanceCommand } from './commands/balance.js';
 import { testCommand } from './commands/test.js';
 import { authLoginCommand, authLogoutCommand, authStatusCommand } from './commands/auth.js';
 import { syncCommand } from './commands/sync.js';
+import { whoamiCommand } from './commands/whoami.js';
 import { configGetCommand, configSetCommand } from './commands/config.js';
 import { createRequire } from 'module';
 
@@ -105,6 +106,13 @@ program
   });
 
 // Username commands
+program
+  .command('whoami')
+  .description('Show which identity this repo plays as')
+  .action(() => {
+    whoamiCommand();
+  });
+
 program
   .command('username:set')
   .description('Set GitHub username')

@@ -7,7 +7,8 @@ interface Config {
   githubUsername?: string;
   playAsUsername?: string; // Per-repo override: play as this username instead
   apiUrl?: string;
-  apiToken?: string;
+  apiTokens?: Record<string, string>; // github username -> API token
+  apiToken?: string; // Legacy single token, migrated into apiTokens on read
   syncEnabled?: boolean;
   privateRepo?: boolean;
 }
@@ -64,10 +65,35 @@ export function getGlobalConfig(): Config {
 
   try {
     const content = fs.readFileSync(configPath, 'utf-8');
-    return JSON.parse(content);
+    return migrateLegacyToken(JSON.parse(content));
   } catch {
     return {};
   }
+}
+
+// Move a pre-3.1 single `apiToken` under the username it belongs to.
+// Idempotent, and a no-op when we can't attribute the token to anyone.
+function migrateLegacyToken(config: Config): Config {
+  const owner = config.githubUsername;
+
+  if (!config.apiToken || !owner) {
+    return config;
+  }
+
+  const apiTokens = { ...config.apiTokens };
+
+  if (apiTokens[owner]) {
+    return config;
+  }
+
+  apiTokens[owner] = config.apiToken;
+
+  const migrated: Config = { ...config, apiTokens };
+  delete migrated.apiToken;
+
+  saveGlobalConfig(migrated);
+
+  return migrated;
 }
 
 // Save repo-specific config
@@ -105,21 +131,67 @@ export function setApiUrl(url: string): void {
   saveGlobalConfig(config);
 }
 
+// Token for the identity in play here: the per-repo override if set,
+// otherwise the global username. Never hands one identity another's token.
 export function getApiToken(): string | null {
-  const config = getConfig();
-  return config.apiToken || null;
+  const config = getGlobalConfig();
+  const username = getGitHubUsername();
+
+  if (!username) {
+    return null;
+  }
+
+  const token = config.apiTokens?.[username];
+
+  if (token) {
+    return token;
+  }
+
+  // Unattributable legacy token: only usable by the global identity
+  if (config.apiToken && username === config.githubUsername) {
+    return config.apiToken;
+  }
+
+  return null;
 }
 
-export function setApiToken(token: string): void {
+export function setApiToken(token: string, username: string): void {
   const config = getGlobalConfig();
-  config.apiToken = token;
+  config.apiTokens = { ...config.apiTokens, [username]: token };
   saveGlobalConfig(config);
 }
 
-export function clearApiToken(): void {
+export function clearApiToken(username?: string): void {
   const config = getGlobalConfig();
+  const target = username || getGitHubUsername();
+
+  if (target && config.apiTokens) {
+    delete config.apiTokens[target];
+  }
+
+  if (!target || target === config.githubUsername) {
+    delete config.apiToken;
+  }
+
+  saveGlobalConfig(config);
+}
+
+export function clearAllApiTokens(): void {
+  const config = getGlobalConfig();
+  delete config.apiTokens;
   delete config.apiToken;
   saveGlobalConfig(config);
+}
+
+export function getAuthenticatedUsernames(): string[] {
+  const config = getGlobalConfig();
+  const usernames = new Set(Object.keys(config.apiTokens || {}));
+
+  if (config.apiToken && config.githubUsername) {
+    usernames.add(config.githubUsername);
+  }
+
+  return [...usernames].sort();
 }
 
 export function isSyncEnabled(): boolean {
