@@ -2,7 +2,7 @@ import { detectPattern, PatternType } from '../patterns.js';
 import { animateSlotMachine, animateSmallMode } from '../animation/slotMachine.js';
 import { getBalance, updateBalance, setBalance } from '../balance.js';
 import { sendPlayToAPI, PlayData } from '../api.js';
-import { getRepoInfo, getGitHubUsername } from '../config.js';
+import { getRepoInfo, getGitHubUsername, getApiToken, isSyncEnabled } from '../config.js';
 import { detectAmendGrinding, getAmendWarningMessage } from '../utils/amendDetector.js';
 import { checkSecret } from '../secrets.js';
 import chalk from 'chalk';
@@ -100,12 +100,23 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
     const repoInfo = getRepoInfo();
     const githubUsername = getGitHubUsername();
 
-    if (!repoInfo && githubUsername) {
+    // Both notices are gated off --small: that's the post-commit hook's only
+    // mode, its output is a single-line contract (animateSmallMode ends without
+    // a newline), and repeating them on every commit burns CI/LLM context.
+    if (!options.small && !repoInfo && githubUsername) {
       console.log();
       console.log(chalk.yellow.bold('⚠ Warning: No GitHub remote detected'));
       console.log(chalk.dim('This repo will not sync to the leaderboard.'));
       console.log(chalk.dim('To sync, add a GitHub remote:'));
       console.log(chalk.cyan('  git remote add origin https://github.com/username/repo.git'));
+      console.log();
+    }
+
+    // Sync is on and we know who we are, but hold no token for that identity
+    if (!options.small && repoInfo && githubUsername && isSyncEnabled() && !getApiToken()) {
+      console.log();
+      console.log(chalk.dim(`Not authenticated as ${githubUsername} — this play stays local.`));
+      console.log(chalk.cyan(`  git-slot-machine login ${githubUsername}`));
       console.log();
     }
 

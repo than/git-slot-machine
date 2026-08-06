@@ -4,13 +4,11 @@ import {
   setApiUrl,
   isSyncEnabled,
   setSyncEnabled,
-  getConfig
+  getApiToken
 } from '../config.js';
 
 export async function configGetCommand(key: string): Promise<void> {
   try {
-    const config = getConfig();
-
     switch (key) {
       case 'api-url':
         console.log(getApiUrl());
@@ -22,7 +20,7 @@ export async function configGetCommand(key: string): Promise<void> {
         console.log(chalk.bold('Configuration:'));
         console.log(`  API URL: ${chalk.cyan(getApiUrl())}`);
         console.log(`  Sync Enabled: ${chalk.cyan(isSyncEnabled())}`);
-        console.log(`  Has Token: ${chalk.cyan(config.apiToken ? 'yes' : 'no')}`);
+        console.log(`  Has Token: ${chalk.cyan(getApiToken() ? 'yes' : 'no')}`);
         break;
       default:
         console.error(chalk.red(`Unknown config key: ${key}`));

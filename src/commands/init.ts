@@ -4,7 +4,7 @@ import * as readline from 'readline';
 import chalk from 'chalk';
 import { isGitRepo, detectGitHubUsername } from '../utils/git.js';
 import { POST_COMMIT_HOOK } from '../templates/post-commit.js';
-import { getRepoInfo, setGitHubUsername, getGitHubUsername, setPrivateRepo, setPlayAsUsername } from '../config.js';
+import { getRepoInfo, setGitHubUsername, getGlobalConfig, setPrivateRepo, setPlayAsUsername, clearPlayAsUsername } from '../config.js';
 import { authLoginCommand } from './auth.js';
 
 async function isRepoPublic(owner: string, repo: string): Promise<boolean | null> {
@@ -66,8 +66,11 @@ export async function initCommand(): Promise<void> {
     process.exit(1);
   }
 
-  // Detect GitHub username (not repo owner)
-  let githubUsername = getGitHubUsername();
+  // Detect GitHub username (not repo owner). Global-only, NOT
+  // getGitHubUsername(): that resolves playAsUsername first, so re-running
+  // init in a repo already credited to an org would adopt the org as the
+  // personal identity, skip the credit prompt, and persist it globally.
+  let githubUsername = getGlobalConfig().githubUsername || null;
 
   if (!githubUsername) {
     // Try to detect from git config
@@ -192,6 +195,9 @@ export async function initCommand(): Promise<void> {
     // Ask if they want to play as org or personal username
     const repoOwner = repoInfo.owner;
 
+    // Username to authenticate as; may differ from the global personal identity
+    let authUsername = githubUsername;
+
     // Only ask if repo owner is different from personal username and not in privacy mode
     if (!usePrivacyMode && repoOwner.toLowerCase() !== githubUsername.toLowerCase()) {
       console.log(chalk.cyan('Who should get credit for commits in this repo?'));
@@ -209,10 +215,13 @@ export async function initCommand(): Promise<void> {
         console.log(chalk.green(`✓ Commits in this repo will be credited to ${repoOwner}`));
         console.log();
 
-        // Update githubUsername for authentication
-        githubUsername = repoOwner;
+        // Authenticate as the org for this repo only; global identity is unchanged
+        authUsername = repoOwner;
       } else {
-        // Play as personal username (default)
+        // Play as personal username (default). Clear any existing override —
+        // on a re-run this branch is the only way back to personal credit,
+        // and printing success while the override survives is the lie.
+        clearPlayAsUsername();
         console.log(chalk.green(`✓ Commits in this repo will be credited to ${githubUsername}`));
         console.log();
       }
@@ -221,14 +230,14 @@ export async function initCommand(): Promise<void> {
     // Authenticate
     console.log(chalk.dim('Authenticating...'));
     try {
-      await authLoginCommand(githubUsername);
+      await authLoginCommand(authUsername, authUsername === githubUsername);
       console.log(chalk.green('✓ You\'re on the leaderboard!'));
       console.log(chalk.dim('View it at: https://gitslotmachine.com'));
       console.log();
     } catch (error) {
       console.log(chalk.yellow('⚠️  Authentication failed'));
       console.log(chalk.dim('Your commits will work locally, but won\'t appear on the leaderboard'));
-      console.log(chalk.dim(`Try again: git-slot-machine login ${githubUsername}`));
+      console.log(chalk.dim(`Try again: git-slot-machine login ${authUsername}`));
       console.log();
     }
   }

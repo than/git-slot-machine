@@ -9,7 +9,9 @@ import { balanceCommand } from './commands/balance.js';
 import { testCommand } from './commands/test.js';
 import { authLoginCommand, authLogoutCommand, authStatusCommand } from './commands/auth.js';
 import { syncCommand } from './commands/sync.js';
+import { whoamiCommand } from './commands/whoami.js';
 import { configGetCommand, configSetCommand } from './commands/config.js';
+import { getGlobalConfig } from './config.js';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
@@ -65,14 +67,29 @@ program
   .description('Login with GitHub username to join the leaderboard')
   .argument('<github-username>', 'Your GitHub username')
   .action(async (githubUsername: string) => {
-    await authLoginCommand(githubUsername);
+    try {
+      // Only adopt the name globally when no identity is established yet, or
+      // when it IS the established identity. Logging in as anything else —
+      // this repo's org override, or a first org login before any override
+      // exists — stores a token without touching the global identity; the
+      // deliberate change is `username:set`.
+      const globalUsername = getGlobalConfig().githubUsername;
+      const persist =
+        !globalUsername || globalUsername.toLowerCase() === githubUsername.toLowerCase();
+      await authLoginCommand(githubUsername, persist);
+    } catch (error) {
+      console.error(chalk.red(`Error: ${(error as Error).message}`));
+      process.exit(1);
+    }
   });
 
 program
   .command('logout')
   .description('Logout and clear authentication')
-  .action(async () => {
-    await authLogoutCommand();
+  .option('--all', 'Log out every authenticated identity')
+  .option('--force', 'Clear tokens locally even when server revocation fails')
+  .action(async (options: { all?: boolean; force?: boolean }) => {
+    await authLogoutCommand(options);
   });
 
 program
@@ -105,6 +122,13 @@ program
   });
 
 // Username commands
+program
+  .command('whoami')
+  .description('Show which identity this repo plays as')
+  .action(() => {
+    whoamiCommand();
+  });
+
 program
   .command('username:set')
   .description('Set GitHub username')
