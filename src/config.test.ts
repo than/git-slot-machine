@@ -8,6 +8,8 @@ import {
   getGlobalConfig,
   getAuthenticatedUsernames,
   setPlayAsUsername,
+  getPlayAsUsername,
+  clearPlayAsUsername,
   saveGlobalConfig,
 } from './config.js';
 
@@ -105,6 +107,27 @@ describe('config: per-identity tokens and legacy migration', () => {
 
     expect(readGlobalConfigFile().apiTokens).toEqual({ than: 'personal' });
     expect(getApiToken()).toBe('personal');
+  });
+
+  it('clears the per-repo override when personal credit is chosen again', () => {
+    // init's "1) personal" branch calls this; without it the override
+    // survives the re-run while the CLI prints that credit went personal.
+    setPlayAsUsername('acme-corp');
+    expect(getPlayAsUsername()).toBe('acme-corp');
+
+    clearPlayAsUsername();
+    expect(getPlayAsUsername()).toBeNull();
+  });
+
+  it('first writer wins when normalization collides two casings of one name', () => {
+    writeGlobalConfig({
+      githubUsername: 'other',
+      apiTokens: { Netflix: 'first-token', netflix: 'second-token' },
+    });
+    setPlayAsUsername('netflix');
+
+    // Insertion order of the JSON object decides; matches pre-3.1.1 lookups.
+    expect(getApiToken()).toBe('first-token');
   });
 
   it('lowercases mixed-case keys written by 3.1.0 so lookups still hit', () => {

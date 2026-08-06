@@ -4,7 +4,7 @@ import * as readline from 'readline';
 import chalk from 'chalk';
 import { isGitRepo, detectGitHubUsername } from '../utils/git.js';
 import { POST_COMMIT_HOOK } from '../templates/post-commit.js';
-import { getRepoInfo, setGitHubUsername, getGlobalConfig, setPrivateRepo, setPlayAsUsername } from '../config.js';
+import { getRepoInfo, setGitHubUsername, getGlobalConfig, setPrivateRepo, setPlayAsUsername, clearPlayAsUsername } from '../config.js';
 import { authLoginCommand } from './auth.js';
 
 async function isRepoPublic(owner: string, repo: string): Promise<boolean | null> {
@@ -218,7 +218,10 @@ export async function initCommand(): Promise<void> {
         // Authenticate as the org for this repo only; global identity is unchanged
         authUsername = repoOwner;
       } else {
-        // Play as personal username (default)
+        // Play as personal username (default). Clear any existing override —
+        // on a re-run this branch is the only way back to personal credit,
+        // and printing success while the override survives is the lie.
+        clearPlayAsUsername();
         console.log(chalk.green(`✓ Commits in this repo will be credited to ${githubUsername}`));
         console.log();
       }

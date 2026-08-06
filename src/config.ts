@@ -220,13 +220,6 @@ export function clearApiToken(username?: string): void {
   saveGlobalConfig(config);
 }
 
-export function clearAllApiTokens(): void {
-  const config = getGlobalConfig();
-  delete config.apiTokens;
-  delete config.apiToken;
-  saveGlobalConfig(config);
-}
-
 // No legacy-apiToken branch: migrateLegacyToken runs on every read, so by
 // here an attributable legacy token is already in apiTokens (in memory even
 // when the write-back failed), and an unattributable one belongs to no one.
@@ -261,6 +254,14 @@ export function setPrivateRepo(isPrivate: boolean): void {
 export function setPlayAsUsername(username: string): void {
   const config = getRepoConfig();
   config.playAsUsername = username;
+  saveRepoConfig(config);
+}
+
+// Choosing personal credit must remove an existing override, not just skip
+// writing one — the override survives re-runs of init otherwise.
+export function clearPlayAsUsername(): void {
+  const config = getRepoConfig();
+  delete config.playAsUsername;
   saveRepoConfig(config);
 }
 

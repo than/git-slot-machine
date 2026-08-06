@@ -11,7 +11,7 @@ import { authLoginCommand, authLogoutCommand, authStatusCommand } from './comman
 import { syncCommand } from './commands/sync.js';
 import { whoamiCommand } from './commands/whoami.js';
 import { configGetCommand, configSetCommand } from './commands/config.js';
-import { getPlayAsUsername } from './config.js';
+import { getGlobalConfig } from './config.js';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
@@ -68,11 +68,15 @@ program
   .argument('<github-username>', 'Your GitHub username')
   .action(async (githubUsername: string) => {
     try {
-      // Same rule as init: logging in as this repo's per-repo identity (an org)
-      // must not adopt it as the global identity — that's the hijack 3.1 fixes.
-      const isPerRepoIdentity =
-        getPlayAsUsername()?.toLowerCase() === githubUsername.toLowerCase();
-      await authLoginCommand(githubUsername, !isPerRepoIdentity);
+      // Only adopt the name globally when no identity is established yet, or
+      // when it IS the established identity. Logging in as anything else —
+      // this repo's org override, or a first org login before any override
+      // exists — stores a token without touching the global identity; the
+      // deliberate change is `username:set`.
+      const globalUsername = getGlobalConfig().githubUsername;
+      const persist =
+        !globalUsername || globalUsername.toLowerCase() === githubUsername.toLowerCase();
+      await authLoginCommand(githubUsername, persist);
     } catch (error) {
       console.error(chalk.red(`Error: ${(error as Error).message}`));
       process.exit(1);

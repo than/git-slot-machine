@@ -3,7 +3,6 @@ import { createToken, logout as apiLogout, verifyToken } from '../api.js';
 import {
   setApiToken,
   clearApiToken,
-  clearAllApiTokens,
   getApiToken,
   getApiTokenFor,
   getApiUrl,
@@ -30,9 +29,17 @@ export async function authLoginCommand(
 
   // Save token under its own identity; only overwrite the global
   // username for a real personal login
+  const previous = getApiTokenFor(githubUsername);
   setApiToken(token, githubUsername);
   if (persistGlobalUsername) {
     setGitHubUsername(githubUsername);
+  }
+
+  // Best-effort revocation of the token this one replaces — tokens never
+  // expire server-side, so overwriting without revoking leaves the old one
+  // live forever. Never fail the login over it.
+  if (previous && previous !== token) {
+    await apiLogout(previous);
   }
 
   console.log(chalk.green('Successfully authenticated!'));
@@ -45,7 +52,7 @@ export async function authLoginCommand(
   console.log(chalk.dim('  • GitHub username'));
   console.log(chalk.dim('  • Pattern type, payout, and balance'));
   console.log();
-  console.log(chalk.dim('To disable sync: git-slot-machine config set sync-enabled false'));
+  console.log(chalk.dim('To disable sync: git-slot-machine sync:disable'));
 }
 
 export async function authLogoutCommand(options: { all?: boolean } = {}): Promise<void> {
@@ -58,24 +65,27 @@ export async function authLogoutCommand(options: { all?: boolean } = {}): Promis
         return;
       }
 
-      // Revoke every held token server-side, then clear locally. Deleting a
-      // local token whose server copy is still live must never read as success
-      // — nothing expires or rotates tokens server-side.
+      // Revoke every held token server-side; clear locally ONLY the ones that
+      // revoked. Deleting a local token whose server copy is still live would
+      // discard the one credential that can finish the job — tokens never
+      // expire or rotate server-side.
+      const revokedIdentities: string[] = [];
       const unrevoked: string[] = [];
       for (const identity of identities) {
         const token = getApiTokenFor(identity);
-        if (!token || !(await apiLogout(token))) {
+        if (token && (await apiLogout(token))) {
+          clearApiToken(identity);
+          revokedIdentities.push(identity);
+        } else {
           unrevoked.push(identity);
         }
       }
 
-      clearAllApiTokens();
-
-      console.log(chalk.green(`Cleared local tokens for: ${identities.join(', ')}`));
+      if (revokedIdentities.length > 0) {
+        console.log(chalk.green(`Logged out: ${revokedIdentities.join(', ')} (revoked on the server).`));
+      }
       if (unrevoked.length > 0) {
-        console.log(chalk.yellow(`Could not revoke server-side for: ${unrevoked.join(', ')} — those tokens may still be valid. Revoke them at gitslotmachine.com.`));
-      } else {
-        console.log(chalk.dim('All tokens revoked on the server.'));
+        console.log(chalk.yellow(`Could not revoke: ${unrevoked.join(', ')} — their tokens are kept locally so you can re-run logout --all when the server is reachable.`));
       }
       return;
     }

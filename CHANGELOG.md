@@ -9,12 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`git-slot-machine logout --all`** — revokes every identity's token on the server, then clears them locally; any identity that couldn't be revoked is named
-- Logout reports when a token could not be revoked server-side (tokens never expire there) instead of claiming success
+- **`git-slot-machine logout --all`** — revokes every identity's token on the server and clears the revoked ones locally; tokens that couldn't be revoked are kept so a re-run can finish the job
+- Logout reports when a token could not be revoked server-side (tokens never expire there) instead of claiming success; re-authenticating best-effort revokes the token it replaces
 
 ### Fixed
 
-- **`login <name>` and re-running `init` no longer hijack the global identity.** Both resolve the personal identity from the global config, so acting as a repo's org identity never adopts it machine-wide
+- **`login <name>` and re-running `init` no longer hijack the global identity.** `login` only adopts a name globally when no identity is established yet or it matches the established one (`username:set` is the deliberate change); `init` resolves the personal identity from the global config, and choosing personal credit now actually clears an existing per-repo override
 - Token keys are lowercased on write and lookup (GitHub usernames are case-insensitive); mixed-case keys written by 3.1.0 are normalized on first read so their tokens keep resolving
 - `config get all` reads token state through the per-identity lookup instead of the removed legacy field
 - Unauthenticated/no-remote notices no longer fire in `--small` mode, preserving the post-commit hook's single-line output
