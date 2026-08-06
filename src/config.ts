@@ -213,7 +213,10 @@ export function clearApiToken(username?: string): void {
     delete config.apiTokens[target];
   }
 
-  if (!target || target === config.githubUsername?.toLowerCase()) {
+  // Only when the target IS the global identity: with no resolvable target
+  // this would otherwise delete the unattributable legacy token that
+  // migrateLegacyToken deliberately preserves.
+  if (target && target === config.githubUsername?.toLowerCase()) {
     delete config.apiToken;
   }
 

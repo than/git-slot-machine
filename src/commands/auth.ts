@@ -8,6 +8,7 @@ import {
   getApiUrl,
   setGitHubUsername,
   getGitHubUsername,
+  getPlayAsUsername,
   getAuthenticatedUsernames,
 } from '../config.js';
 
@@ -37,7 +38,9 @@ export async function authLoginCommand(
 
   // Best-effort revocation of the token this one replaces — tokens never
   // expire server-side, so overwriting without revoking leaves the old one
-  // live forever. Never fail the login over it.
+  // live forever. Never fail the login over it. Safe with the fresh token:
+  // the server's DELETE /auth/token is currentAccessToken()->delete()
+  // (AuthController), so only the presented bearer dies.
   if (previous && previous !== token) {
     await apiLogout(previous);
   }
@@ -45,6 +48,21 @@ export async function authLoginCommand(
   console.log(chalk.green('Successfully authenticated!'));
   console.log(chalk.dim(`Token saved. API URL: ${getApiUrl()}`));
   console.log(chalk.dim(`GitHub Username: ${githubUsername}`));
+
+  // A token alone changes nothing about who gets credit. When this login
+  // didn't adopt the name globally AND no repo override credits it, say so —
+  // the token would otherwise sit unused behind a success message.
+  if (!persistGlobalUsername) {
+    const playAs = getPlayAsUsername();
+    const creditsThisName = playAs?.toLowerCase() === githubUsername.toLowerCase();
+    if (!creditsThisName) {
+      const effective = getGitHubUsername();
+      console.log();
+      console.log(chalk.yellow(`Note: this repo still credits plays to ${effective}.`));
+      console.log(chalk.dim(`  git-slot-machine init            # credit this repo to ${githubUsername}`));
+      console.log(chalk.dim(`  git-slot-machine username:set    # change your global identity`));
+    }
+  }
   console.log();
   console.log(chalk.yellow('Data sent to server on each commit:'));
   console.log(chalk.dim('  • Commit hash (7 and 40 character versions)'));
@@ -55,7 +73,7 @@ export async function authLoginCommand(
   console.log(chalk.dim('To disable sync: git-slot-machine sync:disable'));
 }
 
-export async function authLogoutCommand(options: { all?: boolean } = {}): Promise<void> {
+export async function authLogoutCommand(options: { all?: boolean; force?: boolean } = {}): Promise<void> {
   try {
     if (options.all) {
       const identities = getAuthenticatedUsernames();
@@ -68,12 +86,18 @@ export async function authLogoutCommand(options: { all?: boolean } = {}): Promis
       // Revoke every held token server-side; clear locally ONLY the ones that
       // revoked. Deleting a local token whose server copy is still live would
       // discard the one credential that can finish the job — tokens never
-      // expire or rotate server-side.
+      // expire or rotate server-side. --force is the escape hatch for tokens
+      // the server permanently rejects (already revoked from the web, user
+      // deleted): a rejection is indistinguishable from an unreachable server
+      // here, so without it those identities could never be cleared.
       const revokedIdentities: string[] = [];
       const unrevoked: string[] = [];
       for (const identity of identities) {
         const token = getApiTokenFor(identity);
         if (token && (await apiLogout(token))) {
+          clearApiToken(identity);
+          revokedIdentities.push(identity);
+        } else if (options.force) {
           clearApiToken(identity);
           revokedIdentities.push(identity);
         } else {
@@ -82,10 +106,12 @@ export async function authLogoutCommand(options: { all?: boolean } = {}): Promis
       }
 
       if (revokedIdentities.length > 0) {
-        console.log(chalk.green(`Logged out: ${revokedIdentities.join(', ')} (revoked on the server).`));
+        const suffix = options.force ? '' : ' (revoked on the server)';
+        console.log(chalk.green(`Logged out: ${revokedIdentities.join(', ')}${suffix}.`));
       }
       if (unrevoked.length > 0) {
         console.log(chalk.yellow(`Could not revoke: ${unrevoked.join(', ')} — their tokens are kept locally so you can re-run logout --all when the server is reachable.`));
+        console.log(chalk.dim('If a token was already revoked elsewhere, logout --all --force clears it locally anyway.'));
       }
       return;
     }
@@ -98,18 +124,21 @@ export async function authLogoutCommand(options: { all?: boolean } = {}): Promis
       return;
     }
 
-    // Try to revoke token on server
+    // Try to revoke token on server. Same rule as --all: a token we couldn't
+    // revoke is kept (it's the only credential that can finish the job),
+    // and --force is the escape hatch for tokens the server already rejects.
     const revoked = await apiLogout();
+
+    if (!revoked && !options.force) {
+      console.log(chalk.yellow('The token could not be revoked server-side and was kept locally — re-run when the server is reachable.'));
+      console.log(chalk.dim('If it was already revoked elsewhere, logout --force clears it locally anyway.'));
+      return;
+    }
 
     // Clear local token for this identity only
     clearApiToken();
 
     console.log(chalk.green(`Successfully logged out${username ? ` as ${username}` : ''}.`));
-    if (!revoked) {
-      // Nothing expires or rotates tokens server-side, so a silently failed
-      // revocation leaves a live bearer token the user believes is dead.
-      console.log(chalk.yellow('The token could not be revoked server-side and may still be valid. Revoke it at gitslotmachine.com.'));
-    }
 
     const remaining = getAuthenticatedUsernames();
     if (remaining.length > 0) {

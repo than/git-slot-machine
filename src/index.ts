@@ -87,7 +87,8 @@ program
   .command('logout')
   .description('Logout and clear authentication')
   .option('--all', 'Log out every authenticated identity')
-  .action(async (options: { all?: boolean }) => {
+  .option('--force', 'Clear tokens locally even when server revocation fails')
+  .action(async (options: { all?: boolean; force?: boolean }) => {
     await authLogoutCommand(options);
   });
 
