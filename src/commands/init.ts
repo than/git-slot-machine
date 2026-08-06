@@ -4,7 +4,7 @@ import * as readline from 'readline';
 import chalk from 'chalk';
 import { isGitRepo, detectGitHubUsername } from '../utils/git.js';
 import { POST_COMMIT_HOOK } from '../templates/post-commit.js';
-import { getRemoteRepoInfo, setGitHubUsername, getGlobalConfig, isPrivateRepo, setPrivateRepo, setPlayAsUsername, clearPlayAsUsername } from '../config.js';
+import { getRemoteRepoInfo, getGitCommonDir, setGitHubUsername, getGlobalConfig, isPrivateRepo, setPrivateRepo, setPlayAsUsername, clearPlayAsUsername } from '../config.js';
 import { authLoginCommand } from './auth.js';
 
 async function isRepoPublic(owner: string, repo: string): Promise<boolean | null> {
@@ -165,7 +165,19 @@ export async function initCommand(): Promise<void> {
     console.log(chalk.green('✓ Public repository confirmed'));
   }
 
-  const hookPath = path.join(process.cwd(), '.git', 'hooks', 'post-commit');
+  // The common git dir, not cwd/.git: hooks are shared across worktrees, and
+  // in a worktree or from a subdirectory cwd/.git is a file or absent — the
+  // write below would throw ENOTDIR/ENOENT after init had already prompted for
+  // and persisted the privacy answer.
+  const gitDir = getGitCommonDir();
+
+  if (!gitDir) {
+    console.error(chalk.red('Error: could not locate this repository\'s .git directory'));
+    process.exit(1);
+  }
+
+  const hookPath = path.join(gitDir, 'hooks', 'post-commit');
+  fs.mkdirSync(path.dirname(hookPath), { recursive: true });
 
   // Check if hook already exists
   if (fs.existsSync(hookPath)) {

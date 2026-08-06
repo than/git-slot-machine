@@ -21,14 +21,20 @@ export type Scope = 'global' | 'repo';
 // every post-commit play and the slow branch shells out.
 let gitDirCache: { cwd: string; dir: string | null } | null = null;
 
-// The directory repo config lives in, or null if there isn't one here.
+// The repository's *common* git directory, or null if cwd isn't in a repo.
 //
-// Not just `cwd/.git`: that only resolves at the repo root, and it's a *file*
-// in a worktree or submodule. Since 3.2 repo is the default scope for sync and
-// privacy, both cases matter — a subdirectory would otherwise silently read an
-// empty repo config and fall back to the global defaults, so a repo with sync
-// disabled would sync and a private repo would send its real name.
-function getRepoConfigDir(): string | null {
+// Not `cwd/.git`: that only resolves at the repo root of an ordinary checkout,
+// and it's a *file* in a worktree or submodule. Since 3.2 repo is the default
+// scope for sync and privacy, both cases matter — a subdirectory would
+// otherwise read an empty repo config and fall back to the global defaults, so
+// a repo with sync disabled would sync and a private repo would send its name.
+//
+// Common, not `--absolute-git-dir`: linked worktrees have their own git dir but
+// share this one. Per-repo settings are properties of the repository, not of a
+// checkout — hooks live here too, so a hook installed from the main checkout
+// fires in every worktree and must find the same config. Splitting them is the
+// same silent fallback in a different disguise.
+export function getGitCommonDir(): string | null {
   const cwd = process.cwd();
 
   if (gitDirCache?.cwd === cwd) {
@@ -38,20 +44,26 @@ function getRepoConfigDir(): string | null {
   let dir: string | null = null;
   const local = path.join(cwd, '.git');
 
-  // Fast path: at the repo root of an ordinary checkout, which is where the
-  // post-commit hook always runs. No subprocess.
+  // Fast path: at the repo root of an ordinary checkout, where `.git` is both
+  // the git dir and the common dir. This is where the post-commit hook always
+  // runs, so the hot path spawns nothing.
   if (isDirectory(local)) {
     dir = local;
   } else {
     // Subdirectory, worktree, or submodule. Constant command, no interpolation.
     try {
-      const resolved = execSync('git rev-parse --absolute-git-dir', {
+      const resolved = execSync('git rev-parse --git-common-dir', {
         encoding: 'utf-8',
         stdio: ['ignore', 'pipe', 'ignore'],
       }).trim();
 
-      if (resolved && isDirectory(resolved)) {
-        dir = resolved;
+      // Relative to cwd from inside an ordinary checkout, absolute from a
+      // linked worktree. path.resolve handles both; --path-format=absolute
+      // would too but only on git 2.31+.
+      const absolute = resolved ? path.resolve(cwd, resolved) : '';
+
+      if (absolute && isDirectory(absolute)) {
+        dir = absolute;
       }
     } catch {
       dir = null;
@@ -71,7 +83,7 @@ function isDirectory(target: string): boolean {
 }
 
 function getRepoConfigPath(): string | null {
-  const dir = getRepoConfigDir();
+  const dir = getGitCommonDir();
   return dir === null ? null : path.join(dir, 'slot-machine-config.json');
 }
 

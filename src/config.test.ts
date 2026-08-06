@@ -433,20 +433,32 @@ describe('config: scoped setters and the identity collapse', () => {
       expect(isSyncEnabled()).toBe(false);
     });
 
-    it('writes into the linked git dir of a worktree, where .git is a file', () => {
+    it('shares one repo config between the main checkout and a worktree', () => {
       const tree = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'gsm-wt-')), 'wt');
       git(realRepo, `worktree add -q ${tree}`);
 
       try {
         expect(fs.statSync(path.join(tree, '.git')).isFile()).toBe(true);
 
+        process.chdir(realRepo);
+        setPrivateRepo(true);
+
+        // The linked worktree has its own git dir but shares the common one.
+        // Resolving per-worktree would return {} here and fall back to the
+        // global default — the private repo sending its real name again, in a
+        // different disguise. Hooks live in the common dir, so the hook
+        // installed from the main checkout is what fires here.
         process.chdir(tree);
         expect(hasRepoConfigTarget()).toBe(true);
+        expect(isPrivateRepo()).toBe(true);
 
-        // Before the git-dir resolution this threw ENOTDIR: the guard saw a
-        // .git that exists and let the write through into a file.
+        // And back the other way. Also the write that used to throw ENOTDIR:
+        // the old guard saw a .git that exists and let it through into a file.
         setSyncEnabled(false);
+        process.chdir(realRepo);
         expect(isSyncEnabled()).toBe(false);
+
+        expect(fs.existsSync(path.join(realRepo, '.git', 'slot-machine-config.json'))).toBe(true);
       } finally {
         process.chdir(originalCwd);
         fs.rmSync(path.dirname(tree), { recursive: true, force: true });
