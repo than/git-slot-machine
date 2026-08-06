@@ -79,6 +79,15 @@ describe('config: per-identity tokens and legacy migration', () => {
     expect(readGlobalConfigFile().apiToken).toBeUndefined();
   });
 
+  it('preserves an unattributable legacy token instead of deleting it', () => {
+    // No githubUsername to re-home the token under: deleting it would destroy
+    // the config's only credential. It stays put, awaiting attribution.
+    writeGlobalConfig({ apiToken: 'orphan-token' });
+
+    expect(getGlobalConfig().apiToken).toBe('orphan-token');
+    expect(readGlobalConfigFile().apiToken).toBe('orphan-token');
+  });
+
   it('returns no token for a playAsUsername with no token of its own', () => {
     writeGlobalConfig({ githubUsername: 'than', apiTokens: { than: 'personal' } });
     setPlayAsUsername('acme-corp');

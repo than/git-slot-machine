@@ -213,16 +213,25 @@ export async function verifyToken(token: string): Promise<boolean> {
   }
 }
 
-// Logout (revoke token)
-export async function logout(): Promise<boolean> {
-  if (!getApiToken()) {
-    return true;
+// Logout (revoke token). Revokes the given token, or the active identity's.
+// "No token" is a failure, not a vacuous success — a true return must mean a
+// token was actually revoked server-side, or callers report revocations that
+// never happened.
+export async function logout(token?: string): Promise<boolean> {
+  const bearer = token || getApiToken();
+
+  if (!bearer) {
+    return false;
   }
 
   try {
     const response = await fetchWithFallback('/auth/token', {
       method: 'DELETE',
-      headers: getHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${bearer}`,
+      },
     });
 
     return response !== null && response.ok;

@@ -5,6 +5,7 @@ import {
   clearApiToken,
   clearAllApiTokens,
   getApiToken,
+  getApiTokenFor,
   getApiUrl,
   setGitHubUsername,
   getGitHubUsername,
@@ -57,16 +58,24 @@ export async function authLogoutCommand(options: { all?: boolean } = {}): Promis
         return;
       }
 
-      // Revoke the active identity's token on the server; the rest are
-      // cleared locally (revocation needs each token to be the active one).
-      const revoked = await apiLogout();
+      // Revoke every held token server-side, then clear locally. Deleting a
+      // local token whose server copy is still live must never read as success
+      // — nothing expires or rotates tokens server-side.
+      const unrevoked: string[] = [];
+      for (const identity of identities) {
+        const token = getApiTokenFor(identity);
+        if (!token || !(await apiLogout(token))) {
+          unrevoked.push(identity);
+        }
+      }
+
       clearAllApiTokens();
 
       console.log(chalk.green(`Cleared local tokens for: ${identities.join(', ')}`));
-      if (revoked) {
-        console.log(chalk.dim('The active identity\'s token was revoked on the server; the others remain valid there.'));
+      if (unrevoked.length > 0) {
+        console.log(chalk.yellow(`Could not revoke server-side for: ${unrevoked.join(', ')} — those tokens may still be valid. Revoke them at gitslotmachine.com.`));
       } else {
-        console.log(chalk.yellow('Could not reach the server — the tokens may still be valid. Revoke them at gitslotmachine.com.'));
+        console.log(chalk.dim('All tokens revoked on the server.'));
       }
       return;
     }
@@ -89,7 +98,7 @@ export async function authLogoutCommand(options: { all?: boolean } = {}): Promis
     if (!revoked) {
       // Nothing expires or rotates tokens server-side, so a silently failed
       // revocation leaves a live bearer token the user believes is dead.
-      console.log(chalk.yellow('Could not reach the server — the token may still be valid. Revoke it at gitslotmachine.com.'));
+      console.log(chalk.yellow('The token could not be revoked server-side and may still be valid. Revoke it at gitslotmachine.com.'));
     }
 
     const remaining = getAuthenticatedUsernames();
@@ -128,7 +137,7 @@ export async function authStatusCommand(): Promise<void> {
       console.log(chalk.green(`Authenticated as ${username}`));
       console.log(chalk.dim(`API URL: ${apiUrl}`));
       console.log(chalk.dim(`Token: ${token.substring(0, 10)}...`));
-      if (authenticated.length > 1) {
+      if (authenticated.length > 0) {
         console.log(chalk.dim(`Tokens held for: ${authenticated.join(', ')}`));
       }
     } else {

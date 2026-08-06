@@ -23,16 +23,9 @@ function getGlobalConfigPath(): string {
   const homeDir = os.homedir();
   const configDir = path.join(homeDir, '.git-slot-machine');
 
-  // Owner-only: it holds bearer tokens. The chmod self-heals directories
-  // created 0755 by pre-3.1 versions; best-effort for the same reasons as
-  // the file chmod in saveGlobalConfig.
+  // Owner-only: it holds bearer tokens
   if (!fs.existsSync(configDir)) {
     fs.mkdirSync(configDir, { recursive: true, mode: 0o700 });
-  }
-  try {
-    fs.chmodSync(configDir, 0o700);
-  } catch {
-    // best effort
   }
 
   return path.join(configDir, 'config.json');
@@ -102,7 +95,10 @@ function migrateLegacyToken(config: Config): Config {
     Object.keys(apiTokens).length !== Object.keys(config.apiTokens || {}).length ||
     Object.keys(config.apiTokens || {}).some((key) => key !== key.toLowerCase());
 
-  if (!config.apiToken && !keysChanged) {
+  // Without an owner the legacy token stays where it is (see below), so an
+  // unattributable config with clean keys has nothing to migrate — and must
+  // not trigger a write-back on every read.
+  if (!keysChanged && !(config.apiToken && owner)) {
     return config;
   }
 
@@ -110,7 +106,12 @@ function migrateLegacyToken(config: Config): Config {
   if (Object.keys(apiTokens).length > 0 || config.apiTokens) {
     migrated.apiTokens = apiTokens;
   }
-  delete migrated.apiToken;
+  // Only drop the legacy field once it's re-homed (or a confirmed duplicate of
+  // an attributed token). With no owner to attribute it to, deleting it would
+  // destroy the config's only credential; leave it for a future read to place.
+  if (owner) {
+    delete migrated.apiToken;
+  }
 
   // Persisting is desirable, not load-bearing: a failed write (read-only
   // $HOME, ENOSPC) must not turn a valid on-disk config into `{}` for the
@@ -137,8 +138,12 @@ export function saveRepoConfig(config: Config): void {
 export function saveGlobalConfig(config: Config): void {
   const configPath = getGlobalConfigPath();
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
+  // Modes only change on writes, so self-healing here (not on the read path)
+  // keeps the post-commit hook free of ~8 chmod syscalls per play — which are
+  // network round trips on an NFS/SMB home directory.
   try {
     fs.chmodSync(configPath, 0o600);
+    fs.chmodSync(path.dirname(configPath), 0o700);
   } catch {
     // best effort
   }
@@ -182,6 +187,14 @@ export function getApiToken(): string | null {
   if (!username) {
     return null;
   }
+
+  return config.apiTokens?.[username.toLowerCase()] || null;
+}
+
+// A specific identity's token, for operations that act on every held identity
+// (logout --all revokes each one). Same lowercased keying as getApiToken.
+export function getApiTokenFor(username: string): string | null {
+  const config = getGlobalConfig();
 
   return config.apiTokens?.[username.toLowerCase()] || null;
 }

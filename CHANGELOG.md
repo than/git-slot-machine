@@ -5,20 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] - 2026-08-06
+
+### Added
+
+- **`git-slot-machine logout --all`** — revokes every identity's token on the server, then clears them locally; any identity that couldn't be revoked is named
+- Logout reports when a token could not be revoked server-side (tokens never expire there) instead of claiming success
+
+### Fixed
+
+- **`login <name>` and re-running `init` no longer hijack the global identity.** Both resolve the personal identity from the global config, so acting as a repo's org identity never adopts it machine-wide
+- Token keys are lowercased on write and lookup (GitHub usernames are case-insensitive); mixed-case keys written by 3.1.0 are normalized on first read so their tokens keep resolving
+- `config get all` reads token state through the per-identity lookup instead of the removed legacy field
+- Unauthenticated/no-remote notices no longer fire in `--small` mode, preserving the post-commit hook's single-line output
+- Global config is written `0600` in a `0700` directory (both self-heal on save) — it holds bearer tokens
+- A failed migration write-back no longer blanks a valid on-disk config; an unattributable legacy token is preserved rather than deleted
+- `whoami` shows the per-repo override even when no GitHub remote parses; `status` hints name the real `login` command
+- `apiUrl` is read from the global config only, so a repo-local file can't redirect authenticated syncs
+
 ## [3.1.0] - 2026-07-29
 
 ### Added
 
-- **Per-identity API tokens** — tokens are stored in an `apiTokens` map keyed by (lowercased) GitHub username; the pre-3.1 single `apiToken` is migrated automatically on first read
+- **Per-identity API tokens** — tokens are stored in an `apiTokens` map keyed by GitHub username; the pre-3.1 single `apiToken` is migrated automatically on first read
 - **`git-slot-machine whoami`** — shows the global identity, this repo's effective identity and per-repo override, privacy mode, held tokens, and sync state
-- **`git-slot-machine logout --all`** — clears every identity's token at once
 
 ### Fixed
 
-- **Org logins no longer hijack the global identity.** `init` keeps `githubUsername` personal and stores the org in the repo's `playAsUsername`; `login <name>` only updates the global identity when `<name>` isn't this repo's per-repo identity
-- `config get all` reads token state through the per-identity lookup instead of the removed legacy field
-- Unauthenticated/no-remote notices no longer fire in `--small` mode, preserving the post-commit hook's single-line output
-- Global config is written `0600` in a `0700` directory — it holds bearer tokens
+- **Org logins via `init` no longer hijack the global identity.** `init` keeps `githubUsername` personal and stores the org in the repo's `playAsUsername`
 
 ### Changed
 
