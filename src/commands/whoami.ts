@@ -33,7 +33,11 @@ export function whoamiCommand(): void {
         : chalk.white(`${repoInfo.owner}/${repoInfo.name}`);
 
       line('This repo', repoLabel);
+    }
 
+    // playAsUsername lives in .git/ and applies whether or not a GitHub
+    // remote parses — an override must never be hidden by a missing remote.
+    if (repoInfo || playAs) {
       const effective = getGitHubUsername();
       const suffix = playAs ? chalk.dim('  (per-repo override)') : chalk.dim('  (global)');
       line('Playing as', (effective ? chalk.white(effective) : chalk.yellow('not set')) + suffix, 2);

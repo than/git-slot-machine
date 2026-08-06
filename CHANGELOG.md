@@ -5,16 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## \[3.0.0\] - 2026-06-27
+## [3.1.0] - 2026-07-29
+
+### Added
+
+- **Per-identity API tokens** — tokens are stored in an `apiTokens` map keyed by (lowercased) GitHub username; the pre-3.1 single `apiToken` is migrated automatically on first read
+- **`git-slot-machine whoami`** — shows the global identity, this repo's effective identity and per-repo override, privacy mode, held tokens, and sync state
+- **`git-slot-machine logout --all`** — clears every identity's token at once
+
+### Fixed
+
+- **Org logins no longer hijack the global identity.** `init` keeps `githubUsername` personal and stores the org in the repo's `playAsUsername`; `login <name>` only updates the global identity when `<name>` isn't this repo's per-repo identity
+- `config get all` reads token state through the per-identity lookup instead of the removed legacy field
+- Unauthenticated/no-remote notices no longer fire in `--small` mode, preserving the post-commit hook's single-line output
+- Global config is written `0600` in a `0700` directory — it holds bearer tokens
+
+### Changed
+
+- `vendor/` is gitignored; `composer.json`/`composer.lock` are tracked for the enumeration tooling
+
+## [3.0.0] - 2026-06-27
 
 ### Changed
 
 - **Payout ruleset v3** — every payout rebalanced against exact, enumerated odds (all 16⁷
   hashes). Payouts now follow true rarity monotonically, with intentional themed bonuses
   (ALL NUMBERS rides rich, straights run a touch hot). RTP ≈ 109%.
-  
+
   | Pattern | v2 | v3 |
-  | --- | ---: | ---: |
+  |---|--:|--:|
   | JACKPOT | 100,000 | 250,000 |
   | LUCKY SEVEN | 50,000 | 100,000 |
   | BIG STRAIGHT | 25,000 | 50,000 |
@@ -30,16 +49,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   | TWO PAIR | 25 | 50 |
   | ALL NUMBERS | 50 | 30 |
   | FULL HOUSE | 50 | 25 |
-  
-  Unchanged: THREE OF A KIND 25 · ONE PAIR 10.
 
+  Unchanged: THREE OF A KIND 25 · ONE PAIR 10.
 - Payouts are now sourced from a canonical `patterns.json` shared with the web app
   (single source of truth); the in-code table is guarded by a contract test.
 
 ### Fixed
 
 - Corrected the published odds, which were materially wrong for several patterns
-  (e.g. STRAIGHT is \~2.4× more common, and ALL NUMBERS \~13× more common, than previously stated).
+  (e.g. STRAIGHT is ~2.4× more common, and ALL NUMBERS ~13× more common, than previously stated).
 
 ### Added
 
@@ -47,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   can detect when its bundled payout table has drifted from the server's.
 - `scripts/verify-odds.mjs` — exhaustively enumerates all 16⁷ hashes and asserts every payout/odds.
 
-## \[2.4.0\] - 2026-03-11
+## [2.4.0] - 2026-03-11
 
 ### Fixed
 
@@ -62,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `files` field to `package.json` — package size reduced from 57KB to 24KB (58% smaller)
 
-## \[2.3.1\] - 2026-03-11
+## [2.3.1] - 2026-03-11
 
 ### Fixed
 
@@ -71,13 +89,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Only the final result line is shown, saving LLM context tokens
   - Normal terminal usage is completely unchanged
 
-## \[2.3.0\] - 2025-12-17
+## [2.3.0] - 2025-12-17
 
 ### Added
 
 - ???
 
-## \[2.2.0\] - 2025-10-23
+## [2.2.0] - 2025-10-23
 
 ### Added
 
@@ -89,11 +107,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **API: Suspicious activity tracking** - Tracks hash grinding attempts
   - New `suspicious` and `amend_count` columns in plays table
   - Stores and tracks flagged commits for review
-- **Artisan command:&#x20;**`play:remove` - Safely remove plays and recalculate stats
+- **Artisan command: `play:remove`** - Safely remove plays and recalculate stats
   - Removes specific plays by commit hash and username
   - Recalculates all repository and user statistics
   - Uses database transactions for safety
-- **Artisan command:&#x20;**`plays:suspicious` - View flagged commits
+- **Artisan command: `plays:suspicious`** - View flagged commits
   - Lists all plays flagged for hash grinding
   - Shows statistics and top offenders
   - Filter by user with `--user` option
@@ -104,49 +122,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prevents hash grinding exploitation by detecting and flagging suspicious amend patterns
 - All admin functions are terminal-based (secure for public repositories)
 
-## \[2.1.6\] - 2025-10-17
+## [2.1.6] - 2025-10-17
 
 ### Added
 
 - Web app: Update notification banner
 
-## \[2.1.5\] - 2025-10-17
+## [2.1.5] - 2025-10-17
 
 ### Fixed
 
 - API: Fixed streak timestamp not updating on new records
 
-## \[2.1.4\] - 2025-10-17
+## [2.1.4] - 2025-10-17
 
 ### Fixed
 
 - Web stats: Fixed pattern display names and probabilities in theory vs reality table
 
-## \[2.1.3\] - 2025-10-17
+## [2.1.3] - 2025-10-17
 
 ### Changed
 
 - Web stats: Added flip cards to overview with new metrics (plays per day, expected win rate, payouts per day, net per play)
 
-## \[2.1.2\] - 2025-10-17
+## [2.1.2] - 2025-10-17
 
 ### Changed
 
 - Web stats: Improved theory vs reality table readability with increased precision
 
-## \[2.1.1\] - 2025-10-17
+## [2.1.1] - 2025-10-17
 
 ### Fixed
 
 - Fixed ONE PAIR pattern highlighting in web odds table (JavaScript patterns.js)
 
-## \[2.1.0\] - 2025-10-17
+## [2.1.0] - 2025-10-17
 
 ### Added
 
 - **ONE PAIR pattern** - New break-even pattern at +10 points
   - Exactly one consecutive pair (e.g., `aa1b3d5`)
-  - Occurs in \~14% of commits (\~1 in 7)
+  - Occurs in ~14% of commits (~1 in 7)
   - Replaces the old break-even pattern
 
 ### Changed
@@ -156,7 +174,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Break-even role moved to ONE PAIR
 - Pattern detection priority updated to check ONE PAIR after ALL NUMBERS
 
-## \[2.0.0\] - 2025-10-17
+## [2.0.0] - 2025-10-17
 
 ### Breaking Changes
 
@@ -181,7 +199,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Payout curve now properly reflects mathematical probabilities
 - Rare patterns properly rewarded relative to their actual odds
 
-## \[1.3.2\] - 2025-01-16
+## [1.3.2] - 2025-01-16
 
 ### Added
 
@@ -201,7 +219,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - More flexible identity management for developers working across personal and organizational repos
 - Each repository can have its own credit preferences
 
-## \[1.3.1\] - 2025-01-16
+## [1.3.1] - 2025-01-16
 
 ### Changed
 
@@ -213,7 +231,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cleaner help output focusing on user-facing commands
 - Advanced commands still available but don't clutter common workflows
 
-## \[1.3.0\] - 2025-01-16
+## [1.3.0] - 2025-01-16
 
 ### Changed
 
@@ -229,7 +247,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shorter, more memorable commands for common operations
 - Better command discoverability with resource-based organization
 
-## \[1.2.4\] - 2025-01-16
+## [1.2.4] - 2025-01-16
 
 ### Fixed
 
@@ -237,28 +255,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Now completes username setup, privacy mode, and leaderboard opt-in when hook exists
 - Shows instructions for manually integrating with existing hooks instead of aborting
 
-## \[1.2.3\] - 2025-01-16
+## [1.2.3] - 2025-01-16
 
 ### Fixed
 
 - Fixed postinstall script dependency issue - now uses ANSI codes instead of chalk
 - Postinstall message now displays correctly on global install
 
-## \[1.2.2\] - 2025-01-16
+## [1.2.2] - 2025-01-16
 
 ### Fixed
 
 - Fixed postinstall script not showing on global install
 - Removed overly strict global install detection that prevented message from displaying
 
-## \[1.2.1\] - 2025-01-16
+## [1.2.1] - 2025-01-16
 
 ### Fixed
 
 - Added `-v` shorthand for `--version` flag
 - Updated hardcoded version from 0.1.0 to 1.2.1
 
-## \[1.2.0\] - 2025-01-16
+## [1.2.0] - 2025-01-16
 
 ### Breaking Changes
 
@@ -289,7 +307,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Better username detection reduces manual entry
 - More intuitive command structure (no nested `auth` subcommand)
 
-## \[1.1.2\] - 2025-01-16
+## [1.1.2] - 2025-01-16
 
 ### Improved
 
@@ -298,7 +316,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Public mode shows all items with green checkmarks
 - Added explanatory note for privacy mode showing that repo details are sent as "private/private"
 
-## \[1.1.1\] - 2025-01-16
+## [1.1.1] - 2025-01-16
 
 ### Fixed
 
@@ -313,7 +331,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TypeScript compiler target now outputs ES2022 modules
 - All import statements now include explicit `.js` extensions
 
-## \[1.1.0\] - Previous Release
+## [1.1.0] - Previous Release
 
 ### Added
 

@@ -23,9 +23,9 @@ function getGlobalConfigPath(): string {
   const homeDir = os.homedir();
   const configDir = path.join(homeDir, '.git-slot-machine');
 
-  // Ensure config directory exists
+  // Ensure config directory exists — owner-only: it holds bearer tokens
   if (!fs.existsSync(configDir)) {
-    fs.mkdirSync(configDir, { recursive: true });
+    fs.mkdirSync(configDir, { recursive: true, mode: 0o700 });
   }
 
   return path.join(configDir, 'config.json');
@@ -74,7 +74,7 @@ export function getGlobalConfig(): Config {
 // Move a pre-3.1 single `apiToken` under the username it belongs to.
 // Idempotent, and a no-op when we can't attribute the token to anyone.
 function migrateLegacyToken(config: Config): Config {
-  const owner = config.githubUsername;
+  const owner = config.githubUsername?.toLowerCase();
 
   if (!config.apiToken || !owner) {
     return config;
@@ -82,16 +82,23 @@ function migrateLegacyToken(config: Config): Config {
 
   const apiTokens = { ...config.apiTokens };
 
-  if (apiTokens[owner]) {
-    return config;
+  // Keep whichever token is already attributed; either way the legacy
+  // field has served its purpose and must not linger in the file.
+  if (!apiTokens[owner]) {
+    apiTokens[owner] = config.apiToken;
   }
-
-  apiTokens[owner] = config.apiToken;
 
   const migrated: Config = { ...config, apiTokens };
   delete migrated.apiToken;
 
-  saveGlobalConfig(migrated);
+  // Persisting is desirable, not load-bearing: a failed write (read-only
+  // $HOME, ENOSPC) must not turn a valid on-disk config into `{}` for the
+  // caller — the in-memory migration still stands for this run.
+  try {
+    saveGlobalConfig(migrated);
+  } catch {
+    // couldn't persist; retry on next read
+  }
 
   return migrated;
 }
@@ -102,10 +109,18 @@ export function saveRepoConfig(config: Config): void {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 }
 
-// Save global config
+// Save global config — 0600 because it holds every identity's bearer token.
+// mode is ignored on existing files, so the chmod self-heals configs written
+// by pre-3.1 binaries or drifted since; best-effort because chmod can throw
+// on Windows, bind mounts, and some CI volumes.
 export function saveGlobalConfig(config: Config): void {
   const configPath = getGlobalConfigPath();
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
+  try {
+    fs.chmodSync(configPath, 0o600);
+  } catch {
+    // best effort
+  }
 }
 
 export function getGitHubUsername(): string | null {
@@ -133,6 +148,8 @@ export function setApiUrl(url: string): void {
 
 // Token for the identity in play here: the per-repo override if set,
 // otherwise the global username. Never hands one identity another's token.
+// Keys are lowercased on write and lookup: GitHub usernames are
+// case-insensitive, so `login Netflix` must find a token stored as netflix.
 export function getApiToken(): string | null {
   const config = getGlobalConfig();
   const username = getGitHubUsername();
@@ -141,35 +158,24 @@ export function getApiToken(): string | null {
     return null;
   }
 
-  const token = config.apiTokens?.[username];
-
-  if (token) {
-    return token;
-  }
-
-  // Unattributable legacy token: only usable by the global identity
-  if (config.apiToken && username === config.githubUsername) {
-    return config.apiToken;
-  }
-
-  return null;
+  return config.apiTokens?.[username.toLowerCase()] || null;
 }
 
 export function setApiToken(token: string, username: string): void {
   const config = getGlobalConfig();
-  config.apiTokens = { ...config.apiTokens, [username]: token };
+  config.apiTokens = { ...config.apiTokens, [username.toLowerCase()]: token };
   saveGlobalConfig(config);
 }
 
 export function clearApiToken(username?: string): void {
   const config = getGlobalConfig();
-  const target = username || getGitHubUsername();
+  const target = (username || getGitHubUsername())?.toLowerCase();
 
   if (target && config.apiTokens) {
     delete config.apiTokens[target];
   }
 
-  if (!target || target === config.githubUsername) {
+  if (!target || target === config.githubUsername?.toLowerCase()) {
     delete config.apiToken;
   }
 
@@ -183,15 +189,13 @@ export function clearAllApiTokens(): void {
   saveGlobalConfig(config);
 }
 
+// No legacy-apiToken branch: migrateLegacyToken runs on every read, so by
+// here an attributable legacy token is already in apiTokens (in memory even
+// when the write-back failed), and an unattributable one belongs to no one.
 export function getAuthenticatedUsernames(): string[] {
   const config = getGlobalConfig();
-  const usernames = new Set(Object.keys(config.apiTokens || {}));
 
-  if (config.apiToken && config.githubUsername) {
-    usernames.add(config.githubUsername);
-  }
-
-  return [...usernames].sort();
+  return Object.keys(config.apiTokens || {}).sort();
 }
 
 export function isSyncEnabled(): boolean {

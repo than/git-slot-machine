@@ -11,6 +11,7 @@ import { authLoginCommand, authLogoutCommand, authStatusCommand } from './comman
 import { syncCommand } from './commands/sync.js';
 import { whoamiCommand } from './commands/whoami.js';
 import { configGetCommand, configSetCommand } from './commands/config.js';
+import { getPlayAsUsername } from './config.js';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
@@ -66,14 +67,24 @@ program
   .description('Login with GitHub username to join the leaderboard')
   .argument('<github-username>', 'Your GitHub username')
   .action(async (githubUsername: string) => {
-    await authLoginCommand(githubUsername);
+    try {
+      // Same rule as init: logging in as this repo's per-repo identity (an org)
+      // must not adopt it as the global identity — that's the hijack 3.1 fixes.
+      const isPerRepoIdentity =
+        getPlayAsUsername()?.toLowerCase() === githubUsername.toLowerCase();
+      await authLoginCommand(githubUsername, !isPerRepoIdentity);
+    } catch (error) {
+      console.error(chalk.red(`Error: ${(error as Error).message}`));
+      process.exit(1);
+    }
   });
 
 program
   .command('logout')
   .description('Logout and clear authentication')
-  .action(async () => {
-    await authLogoutCommand();
+  .option('--all', 'Log out every authenticated identity')
+  .action(async (options: { all?: boolean }) => {
+    await authLogoutCommand(options);
   });
 
 program

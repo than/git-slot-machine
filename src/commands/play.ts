@@ -100,7 +100,10 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
     const repoInfo = getRepoInfo();
     const githubUsername = getGitHubUsername();
 
-    if (!repoInfo && githubUsername) {
+    // Both notices are gated off --small: that's the post-commit hook's only
+    // mode, its output is a single-line contract (animateSmallMode ends without
+    // a newline), and repeating them on every commit burns CI/LLM context.
+    if (!options.small && !repoInfo && githubUsername) {
       console.log();
       console.log(chalk.yellow.bold('⚠ Warning: No GitHub remote detected'));
       console.log(chalk.dim('This repo will not sync to the leaderboard.'));
@@ -110,7 +113,7 @@ export async function playCommand(hash: string, options: PlayOptions): Promise<v
     }
 
     // Sync is on and we know who we are, but hold no token for that identity
-    if (repoInfo && githubUsername && isSyncEnabled() && !getApiToken()) {
+    if (!options.small && repoInfo && githubUsername && isSyncEnabled() && !getApiToken()) {
       console.log();
       console.log(chalk.dim(`Not authenticated as ${githubUsername} — this play stays local.`));
       console.log(chalk.cyan(`  git-slot-machine login ${githubUsername}`));
