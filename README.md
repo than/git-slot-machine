@@ -116,9 +116,11 @@ git-slot-machine sync:disable --global
 git-slot-machine privacy:on
 git-slot-machine privacy:off
 
-# Identity defaults to global; --repo credits only this repo
+# Identity defaults to global; --repo credits only this repo.
+# Each identity needs its own login before its plays reach the leaderboard.
 git-slot-machine username:set your-username
 git-slot-machine username:set your-org --repo
+git-slot-machine login your-org
 
 # Show which file owns each setting
 git-slot-machine whoami

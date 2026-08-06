@@ -167,7 +167,7 @@ program
   .option('--repo', 'Credit only this repo to this username')
   .action(async (username: string, options: ScopeOptions) => {
     try {
-      const { setGitHubUsername } = await import('./config.js');
+      const { setGitHubUsername, getApiTokenFor } = await import('./config.js');
       const scope = resolveScope(options, 'global');
       requireRepoScopeTarget(scope);
       setGitHubUsername(username, scope);
@@ -178,6 +178,16 @@ program
             : `Commits in this repo will be credited to ${username}`
         )
       );
+
+      // Plays resolve their token through this name. Without one, every commit
+      // posts and fails, and play.ts's "not authenticated" notice is gated off
+      // --small — which is the post-commit hook's only mode. So the silence
+      // would be total: say it here, where the choice was made.
+      if (!getApiTokenFor(username)) {
+        console.log();
+        console.log(chalk.yellow(`No token held for ${username} — plays stay local until you log in.`));
+        console.log(chalk.cyan(`  git-slot-machine login ${username}`));
+      }
     } catch (error) {
       console.error(chalk.red(`Error: ${(error as Error).message}`));
       process.exit(1);
