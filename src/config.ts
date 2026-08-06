@@ -17,9 +17,62 @@ interface Config {
 // key resolves through getConfig(), where repo already overrides global.
 export type Scope = 'global' | 'repo';
 
-// Get repo-specific config path
-function getRepoConfigPath(): string {
-  return path.join(process.cwd(), '.git', 'slot-machine-config.json');
+// Resolving the git directory, cached per cwd because getRepoConfig() runs on
+// every post-commit play and the slow branch shells out.
+let gitDirCache: { cwd: string; dir: string | null } | null = null;
+
+// The directory repo config lives in, or null if there isn't one here.
+//
+// Not just `cwd/.git`: that only resolves at the repo root, and it's a *file*
+// in a worktree or submodule. Since 3.2 repo is the default scope for sync and
+// privacy, both cases matter — a subdirectory would otherwise silently read an
+// empty repo config and fall back to the global defaults, so a repo with sync
+// disabled would sync and a private repo would send its real name.
+function getRepoConfigDir(): string | null {
+  const cwd = process.cwd();
+
+  if (gitDirCache?.cwd === cwd) {
+    return gitDirCache.dir;
+  }
+
+  let dir: string | null = null;
+  const local = path.join(cwd, '.git');
+
+  // Fast path: at the repo root of an ordinary checkout, which is where the
+  // post-commit hook always runs. No subprocess.
+  if (isDirectory(local)) {
+    dir = local;
+  } else {
+    // Subdirectory, worktree, or submodule. Constant command, no interpolation.
+    try {
+      const resolved = execSync('git rev-parse --absolute-git-dir', {
+        encoding: 'utf-8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim();
+
+      if (resolved && isDirectory(resolved)) {
+        dir = resolved;
+      }
+    } catch {
+      dir = null;
+    }
+  }
+
+  gitDirCache = { cwd, dir };
+  return dir;
+}
+
+function isDirectory(target: string): boolean {
+  try {
+    return fs.statSync(target).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function getRepoConfigPath(): string | null {
+  const dir = getRepoConfigDir();
+  return dir === null ? null : path.join(dir, 'slot-machine-config.json');
 }
 
 // Get global config path
@@ -47,7 +100,7 @@ export function getConfig(): Config {
 export function getRepoConfig(): Config {
   const configPath = getRepoConfigPath();
 
-  if (!fs.existsSync(configPath)) {
+  if (configPath === null || !fs.existsSync(configPath)) {
     return {};
   }
 
@@ -160,14 +213,19 @@ function migrateLegacyToken(config: Config): Config {
 // Save repo-specific config
 export function saveRepoConfig(config: Config): void {
   const configPath = getRepoConfigPath();
+
+  if (configPath === null) {
+    throw new Error('Not a git repository');
+  }
+
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 }
 
-// Is there a .git here to write a repo config into? Repo scope is the default
-// for sync and privacy now, so the answer has to be a message rather than a
-// raw ENOENT out of saveRepoConfig.
+// Is there a git directory to write a repo config into? Repo scope is the
+// default for sync and privacy now, so the answer has to be a message rather
+// than a raw ENOENT out of saveRepoConfig.
 export function hasRepoConfigTarget(): boolean {
-  return fs.existsSync(path.dirname(getRepoConfigPath()));
+  return getRepoConfigPath() !== null;
 }
 
 // Save global config — 0600 because it holds every identity's bearer token.

@@ -166,17 +166,22 @@ program
   .option('--global', 'Apply to every repo (default)')
   .option('--repo', 'Credit only this repo to this username')
   .action(async (username: string, options: ScopeOptions) => {
-    const { setGitHubUsername } = await import('./config.js');
-    const scope = resolveScope(options, 'global');
-    requireRepoScopeTarget(scope);
-    setGitHubUsername(username, scope);
-    console.log(
-      chalk.green(
-        scope === 'global'
-          ? `GitHub username set to: ${username}`
-          : `Commits in this repo will be credited to ${username}`
-      )
-    );
+    try {
+      const { setGitHubUsername } = await import('./config.js');
+      const scope = resolveScope(options, 'global');
+      requireRepoScopeTarget(scope);
+      setGitHubUsername(username, scope);
+      console.log(
+        chalk.green(
+          scope === 'global'
+            ? `GitHub username set to: ${username}`
+            : `Commits in this repo will be credited to ${username}`
+        )
+      );
+    } catch (error) {
+      console.error(chalk.red(`Error: ${(error as Error).message}`));
+      process.exit(1);
+    }
   });
 
 // Config commands (advanced - hidden from main help)

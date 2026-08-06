@@ -1,6 +1,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { execSync } from 'child_process';
 import {
   getApiToken,
   setApiToken,
@@ -391,6 +392,76 @@ describe('config: scoped setters and the identity collapse', () => {
       } finally {
         process.chdir(tempRepo);
         fs.rmSync(bare, { recursive: true, force: true });
+      }
+    });
+  });
+
+  // cwd/.git only resolves at the repo root of an ordinary checkout. Repo is
+  // the default scope for sync and privacy now, so a config the CLI writes and
+  // then can't find again is a setting that silently doesn't apply.
+  describe('git directory resolution', () => {
+    const git = (cwd: string, args: string) =>
+      execSync(`git ${args}`, { cwd, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
+
+    let realRepo: string;
+
+    beforeEach(() => {
+      realRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'gsm-git-'));
+      git(realRepo, 'init -q -b main');
+      git(realRepo, 'config user.email test@example.com');
+      git(realRepo, 'config user.name Test');
+      fs.writeFileSync(path.join(realRepo, 'README'), 'x');
+      git(realRepo, 'add README');
+      git(realRepo, 'commit -qm init');
+    });
+
+    afterEach(() => {
+      fs.rmSync(realRepo, { recursive: true, force: true });
+    });
+
+    it('finds the repo config from a subdirectory', () => {
+      process.chdir(realRepo);
+      setSyncEnabled(false);
+
+      const sub = path.join(realRepo, 'src', 'deep');
+      fs.mkdirSync(sub, { recursive: true });
+      process.chdir(sub);
+
+      // Reading `{}` here would fall back to the syncEnabled !== false
+      // default, so a repo the user disabled would sync anyway.
+      expect(hasRepoConfigTarget()).toBe(true);
+      expect(isSyncEnabled()).toBe(false);
+    });
+
+    it('writes into the linked git dir of a worktree, where .git is a file', () => {
+      const tree = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'gsm-wt-')), 'wt');
+      git(realRepo, `worktree add -q ${tree}`);
+
+      try {
+        expect(fs.statSync(path.join(tree, '.git')).isFile()).toBe(true);
+
+        process.chdir(tree);
+        expect(hasRepoConfigTarget()).toBe(true);
+
+        // Before the git-dir resolution this threw ENOTDIR: the guard saw a
+        // .git that exists and let the write through into a file.
+        setSyncEnabled(false);
+        expect(isSyncEnabled()).toBe(false);
+      } finally {
+        process.chdir(originalCwd);
+        fs.rmSync(path.dirname(tree), { recursive: true, force: true });
+      }
+    });
+
+    it('reports no target outside a repo', () => {
+      const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'gsm-out-'));
+      try {
+        process.chdir(outside);
+        expect(hasRepoConfigTarget()).toBe(false);
+        expect(() => saveRepoConfig({ syncEnabled: false })).toThrow('Not a git repository');
+      } finally {
+        process.chdir(tempRepo);
+        fs.rmSync(outside, { recursive: true, force: true });
       }
     });
   });

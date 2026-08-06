@@ -4,7 +4,7 @@ import * as readline from 'readline';
 import chalk from 'chalk';
 import { isGitRepo, detectGitHubUsername } from '../utils/git.js';
 import { POST_COMMIT_HOOK } from '../templates/post-commit.js';
-import { getRemoteRepoInfo, setGitHubUsername, getGlobalConfig, setPrivateRepo, setPlayAsUsername, clearPlayAsUsername } from '../config.js';
+import { getRemoteRepoInfo, setGitHubUsername, getGlobalConfig, isPrivateRepo, setPrivateRepo, setPlayAsUsername, clearPlayAsUsername } from '../config.js';
 import { authLoginCommand } from './auth.js';
 
 async function isRepoPublic(owner: string, repo: string): Promise<boolean | null> {
@@ -97,13 +97,30 @@ export async function initCommand(): Promise<void> {
     setGitHubUsername(githubUsername);
   }
 
-  // Check if repository is public
-  console.log(chalk.dim('Checking repository visibility...'));
-  const isPublic = await isRepoPublic(repoInfo.owner, repoInfo.name);
+  // Seeded from config, not `false`: on a re-run privacy mode is already on,
+  // and this flag drives the closing "what gets sent" summary. Starting it at
+  // false let a re-run print "Repository URL, owner, and name" as sent while
+  // getRepoInfo() was still sending private/private.
+  let usePrivacyMode = isPrivateRepo();
 
-  let usePrivacyMode = false;
+  if (usePrivacyMode) {
+    console.log(chalk.green('✓ Privacy mode already enabled for this repo'));
+    console.log(chalk.dim('Turn it off with: git-slot-machine privacy:off'));
+    console.log();
+  }
 
-  if (isPublic === false) {
+  // Skip the visibility check and its prompts when privacy mode already
+  // answered the question.
+  let isPublic: boolean | null = false;
+
+  if (!usePrivacyMode) {
+    console.log(chalk.dim('Checking repository visibility...'));
+    isPublic = await isRepoPublic(repoInfo.owner, repoInfo.name);
+  }
+
+  if (usePrivacyMode) {
+    // Already answered above.
+  } else if (isPublic === false) {
     console.log(chalk.yellow('⚠️  Private repository detected'));
     console.log();
     console.log(chalk.cyan('Privacy Mode Available'));
