@@ -5,12 +5,22 @@ import {
   getApiToken,
   setApiToken,
   clearApiToken,
+  getConfig,
   getGlobalConfig,
+  getRepoConfig,
   getAuthenticatedUsernames,
+  getGitHubUsername,
+  setGitHubUsername,
   setPlayAsUsername,
   getPlayAsUsername,
   clearPlayAsUsername,
   saveGlobalConfig,
+  saveRepoConfig,
+  hasRepoConfigTarget,
+  isSyncEnabled,
+  setSyncEnabled,
+  isPrivateRepo,
+  setPrivateRepo,
 } from './config.js';
 
 // config.ts resolves the global config under os.homedir() and the repo config
@@ -207,5 +217,216 @@ describe('config: per-identity tokens and legacy migration', () => {
 
     const mode = fs.statSync(globalConfigPath()).mode & 0o777;
     expect(mode).toBe(0o600);
+  });
+});
+
+describe('config: scoped setters and the identity collapse', () => {
+  let tempHome: string;
+  let tempRepo: string;
+  let homedirSpy: jest.SpyInstance<string, []>;
+  const originalCwd = process.cwd();
+
+  const globalConfigPath = () => path.join(tempHome, '.git-slot-machine', 'config.json');
+  const repoConfigPath = () => path.join(tempRepo, '.git', 'slot-machine-config.json');
+
+  const writeGlobalConfig = (config: object) => {
+    fs.mkdirSync(path.join(tempHome, '.git-slot-machine'), { recursive: true });
+    fs.writeFileSync(globalConfigPath(), JSON.stringify(config));
+  };
+
+  const writeRepoConfig = (config: object) =>
+    fs.writeFileSync(repoConfigPath(), JSON.stringify(config));
+
+  const readGlobalConfigFile = () => JSON.parse(fs.readFileSync(globalConfigPath(), 'utf-8'));
+  const readRepoConfigFile = () => JSON.parse(fs.readFileSync(repoConfigPath(), 'utf-8'));
+
+  beforeEach(() => {
+    tempHome = fs.mkdtempSync(path.join(os.tmpdir(), 'gsm-home-'));
+    tempRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'gsm-repo-'));
+    fs.mkdirSync(path.join(tempRepo, '.git'));
+    homedirSpy = jest.spyOn(os, 'homedir').mockReturnValue(tempHome);
+    process.chdir(tempRepo);
+  });
+
+  afterEach(() => {
+    homedirSpy.mockRestore();
+    process.chdir(originalCwd);
+    fs.rmSync(tempHome, { recursive: true, force: true });
+    fs.rmSync(tempRepo, { recursive: true, force: true });
+  });
+
+  describe('pre-3.2 repo identity migration', () => {
+    it('moves playAsUsername to githubUsername and drops the legacy key', () => {
+      writeGlobalConfig({ githubUsername: 'than' });
+      writeRepoConfig({ playAsUsername: 'broomfitters' });
+
+      expect(getGitHubUsername()).toBe('broomfitters');
+
+      const onDisk = readRepoConfigFile();
+      expect(onDisk.githubUsername).toBe('broomfitters');
+      expect(onDisk.playAsUsername).toBeUndefined();
+    });
+
+    it('keeps the global identity personal through the migration', () => {
+      // The 3.1.0 guarantee: an org override credits the repo without ever
+      // becoming the personal identity. The collapse must not regress it.
+      writeGlobalConfig({ githubUsername: 'than' });
+      writeRepoConfig({ playAsUsername: 'broomfitters' });
+
+      getRepoConfig();
+
+      expect(getGlobalConfig().githubUsername).toBe('than');
+      expect(readGlobalConfigFile().githubUsername).toBe('than');
+    });
+
+    it('re-reads idempotently and leaves a clean config untouched on disk', () => {
+      writeGlobalConfig({ githubUsername: 'than' });
+      writeRepoConfig({ playAsUsername: 'broomfitters', privateRepo: true });
+
+      const first = getRepoConfig();
+      const mtime = fs.statSync(repoConfigPath()).mtimeMs;
+      const second = getRepoConfig();
+
+      expect(second).toEqual(first);
+      expect(second.privateRepo).toBe(true);
+      // No write on the second read: getRepoConfig runs on every post-commit
+      // play, so a migration that rewrites unconditionally is a per-commit write.
+      expect(fs.statSync(repoConfigPath()).mtimeMs).toBe(mtime);
+    });
+
+    it('lets an explicit githubUsername win and still drops the stale key', () => {
+      writeRepoConfig({ githubUsername: 'broomfitters', playAsUsername: 'stale-org' });
+
+      expect(getGitHubUsername()).toBe('broomfitters');
+      expect(readRepoConfigFile().playAsUsername).toBeUndefined();
+    });
+
+    it('serves the migrated identity in memory when the write-back fails', () => {
+      writeRepoConfig({ playAsUsername: 'broomfitters' });
+
+      const writeSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(() => {
+        throw new Error('EROFS: read-only file system');
+      });
+
+      try {
+        expect(getGitHubUsername()).toBe('broomfitters');
+      } finally {
+        writeSpy.mockRestore();
+      }
+
+      expect(readRepoConfigFile().playAsUsername).toBe('broomfitters');
+    });
+
+    it('finds a migrated identity its own token', () => {
+      // getApiToken resolves through getGitHubUsername, so a repo override
+      // that failed to migrate would silently fall back to the personal token.
+      writeGlobalConfig({
+        githubUsername: 'than',
+        apiTokens: { than: 'personal', broomfitters: 'org-token' },
+      });
+      writeRepoConfig({ playAsUsername: 'Broomfitters' });
+
+      expect(getApiToken()).toBe('org-token');
+    });
+  });
+
+  describe('scope isolation', () => {
+    it('defaults sync:disable to this repo and leaves global alone', () => {
+      writeGlobalConfig({ githubUsername: 'than' });
+
+      setSyncEnabled(false);
+
+      expect(readRepoConfigFile().syncEnabled).toBe(false);
+      expect(readGlobalConfigFile().syncEnabled).toBeUndefined();
+      expect(isSyncEnabled()).toBe(false);
+    });
+
+    it('disables globally on demand, without writing the repo config', () => {
+      writeGlobalConfig({ githubUsername: 'than' });
+
+      setSyncEnabled(false, 'global');
+
+      expect(readGlobalConfigFile().syncEnabled).toBe(false);
+      expect(fs.existsSync(repoConfigPath())).toBe(false);
+      expect(isSyncEnabled()).toBe(false);
+    });
+
+    it('lets a repo re-enable sync that is disabled globally', () => {
+      writeGlobalConfig({ githubUsername: 'than', syncEnabled: false });
+
+      setSyncEnabled(true, 'repo');
+
+      expect(isSyncEnabled()).toBe(true);
+      expect(readGlobalConfigFile().syncEnabled).toBe(false);
+    });
+
+    it('honors a global privacy default and a per-repo opt-out', () => {
+      writeGlobalConfig({ githubUsername: 'than' });
+      setPrivateRepo(true, 'global');
+      expect(isPrivateRepo()).toBe(true);
+
+      setPrivateRepo(false);
+      expect(isPrivateRepo()).toBe(false);
+      expect(readGlobalConfigFile().privateRepo).toBe(true);
+    });
+
+    it('scopes username:set global by default and per-repo on request', () => {
+      setGitHubUsername('than');
+      expect(readGlobalConfigFile().githubUsername).toBe('than');
+      expect(fs.existsSync(repoConfigPath())).toBe(false);
+
+      setGitHubUsername('broomfitters', 'repo');
+      expect(getGitHubUsername()).toBe('broomfitters');
+      expect(readGlobalConfigFile().githubUsername).toBe('than');
+      expect(getConfig().githubUsername).toBe('broomfitters');
+    });
+
+    it('reports whether a repo config can be written here', () => {
+      expect(hasRepoConfigTarget()).toBe(true);
+
+      const bare = fs.mkdtempSync(path.join(os.tmpdir(), 'gsm-bare-'));
+      try {
+        process.chdir(bare);
+        expect(hasRepoConfigTarget()).toBe(false);
+      } finally {
+        process.chdir(tempRepo);
+        fs.rmSync(bare, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe('the per-repo override clear path', () => {
+    it('clears an override written under the 3.2 key', () => {
+      writeGlobalConfig({ githubUsername: 'than' });
+      setPlayAsUsername('broomfitters');
+      expect(getPlayAsUsername()).toBe('broomfitters');
+
+      clearPlayAsUsername();
+
+      expect(getPlayAsUsername()).toBeNull();
+      expect(getGitHubUsername()).toBe('than');
+    });
+
+    it('clears a legacy override that has not been migrated yet', () => {
+      // init's "personal credit" branch is the only way back from an org
+      // override; leaving playAsUsername behind would print success and lie.
+      writeGlobalConfig({ githubUsername: 'than' });
+      writeRepoConfig({ playAsUsername: 'broomfitters' });
+
+      clearPlayAsUsername();
+
+      expect(readRepoConfigFile().playAsUsername).toBeUndefined();
+      expect(readRepoConfigFile().githubUsername).toBeUndefined();
+      expect(getGitHubUsername()).toBe('than');
+    });
+
+    it('keeps other repo settings when clearing the override', () => {
+      writeGlobalConfig({ githubUsername: 'than' });
+      saveRepoConfig({ githubUsername: 'broomfitters', privateRepo: true, syncEnabled: false });
+
+      clearPlayAsUsername();
+
+      expect(readRepoConfigFile()).toEqual({ privateRepo: true, syncEnabled: false });
+    });
   });
 });

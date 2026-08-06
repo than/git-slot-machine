@@ -5,13 +5,17 @@ import { execSync } from 'child_process';
 
 interface Config {
   githubUsername?: string;
-  playAsUsername?: string; // Per-repo override: play as this username instead
   apiUrl?: string;
   apiTokens?: Record<string, string>; // github username -> API token
   apiToken?: string; // Legacy single token, migrated into apiTokens on read
   syncEnabled?: boolean;
   privateRepo?: boolean;
+  playAsUsername?: string; // Legacy pre-3.2 repo override, migrated into githubUsername on read
 }
+
+// Which config file a setting is written to. Reads never take a scope: every
+// key resolves through getConfig(), where repo already overrides global.
+export type Scope = 'global' | 'repo';
 
 // Get repo-specific config path
 function getRepoConfigPath(): string {
@@ -49,10 +53,38 @@ export function getRepoConfig(): Config {
 
   try {
     const content = fs.readFileSync(configPath, 'utf-8');
-    return JSON.parse(content);
+    return migrateRepoIdentity(JSON.parse(content));
   } catch {
     return {};
   }
+}
+
+// Normalize a pre-3.2 repo config on read: `playAsUsername` and
+// `githubUsername` were the same concept under two names, and only the repo
+// file ever held the former. Collapsing them is what lets the merged config
+// resolve identity like every other key. Same shape as migrateLegacyToken:
+// idempotent, no-op fast path, and the write-back is best-effort.
+function migrateRepoIdentity(config: Config): Config {
+  if (!config.playAsUsername) {
+    return config;
+  }
+
+  const migrated: Config = { ...config };
+  // An explicit repo `githubUsername` wins — it's the 3.2 key, so it was
+  // written later and by a caller that knew about the collapse. Either way
+  // the legacy key goes: nothing reads it after this release.
+  migrated.githubUsername ??= config.playAsUsername;
+  delete migrated.playAsUsername;
+
+  // A failed write (read-only checkout, ENOSPC) must not cost the caller its
+  // identity for this run — the in-memory migration still stands.
+  try {
+    saveRepoConfig(migrated);
+  } catch {
+    // couldn't persist; retry on next read
+  }
+
+  return migrated;
 }
 
 // Get only global config
@@ -131,6 +163,13 @@ export function saveRepoConfig(config: Config): void {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 }
 
+// Is there a .git here to write a repo config into? Repo scope is the default
+// for sync and privacy now, so the answer has to be a message rather than a
+// raw ENOENT out of saveRepoConfig.
+export function hasRepoConfigTarget(): boolean {
+  return fs.existsSync(path.dirname(getRepoConfigPath()));
+}
+
 // Save global config — 0600 because it holds every identity's bearer token.
 // mode is ignored on existing files, so the chmod self-heals configs written
 // by pre-3.1 binaries or drifted since; best-effort because chmod can throw
@@ -149,16 +188,29 @@ export function saveGlobalConfig(config: Config): void {
   }
 }
 
+// One key, resolved through the merge like everything else: a repo
+// githubUsername overrides the global one because getConfig() spreads repo
+// last. No special case — that resolver was the pre-3.2 shape problem.
 export function getGitHubUsername(): string | null {
-  const config = getConfig();
-  // Check for per-repo override first, then fall back to global username
-  return config.playAsUsername || config.githubUsername || null;
+  return getConfig().githubUsername || null;
 }
 
-export function setGitHubUsername(username: string): void {
-  const config = getGlobalConfig();
-  config.githubUsername = username;
-  saveGlobalConfig(config);
+export function setGitHubUsername(username: string, scope: Scope = 'global'): void {
+  setValue('githubUsername', username, scope);
+}
+
+// The one write path for scoped settings. Reuses the existing load/save pairs
+// so there is no second IO route to keep in step.
+function setValue<K extends keyof Config>(key: K, value: Config[K], scope: Scope): void {
+  if (scope === 'global') {
+    const config = getGlobalConfig();
+    config[key] = value;
+    saveGlobalConfig(config);
+  } else {
+    const config = getRepoConfig();
+    config[key] = value;
+    saveRepoConfig(config);
+  }
 }
 
 // Global-only, like getApiToken: getHeaders() attaches the bearer token to
@@ -170,10 +222,11 @@ export function getApiUrl(): string {
   return config.apiUrl || process.env.GIT_SLOT_MACHINE_API_URL || 'https://gitslotmachine.com/api';
 }
 
+// Global-only, and it stays out of the scope model: getApiUrl reads global
+// only for the reason above, so a repo-scoped apiUrl would be a setting that
+// silently does nothing. The command layer rejects --repo rather than write one.
 export function setApiUrl(url: string): void {
-  const config = getGlobalConfig();
-  config.apiUrl = url;
-  saveGlobalConfig(config);
+  setValue('apiUrl', url, 'global');
 }
 
 // Token for the identity in play here: the per-repo override if set,
@@ -237,71 +290,89 @@ export function isSyncEnabled(): boolean {
   return config.syncEnabled !== false; // Default to true
 }
 
-export function setSyncEnabled(enabled: boolean): void {
-  const config = getGlobalConfig();
-  config.syncEnabled = enabled;
-  saveGlobalConfig(config);
+// Repo by default: `sync:disable` reads as "stop syncing this repo", and
+// before 3.2 it silenced every repo at once. --global restores that.
+export function setSyncEnabled(enabled: boolean, scope: Scope = 'repo'): void {
+  setValue('syncEnabled', enabled, scope);
 }
 
+// Merged, not repo-only: a global `privateRepo: true` means "default all my
+// repos to private". No existing config sets it globally, so this is a no-op
+// on upgrade.
 export function isPrivateRepo(): boolean {
-  const config = getRepoConfig();
-  return config.privateRepo === true;
+  return getConfig().privateRepo === true;
 }
 
-export function setPrivateRepo(isPrivate: boolean): void {
-  const config = getRepoConfig();
-  config.privateRepo = isPrivate;
-  saveRepoConfig(config);
+export function setPrivateRepo(isPrivate: boolean, scope: Scope = 'repo'): void {
+  setValue('privateRepo', isPrivate, scope);
 }
 
+// Identity is one key now, so the per-repo override is just a repo-scoped
+// githubUsername. These two names survive because init and whoami care about
+// the distinction between "overridden here" and "inherited from global".
 export function setPlayAsUsername(username: string): void {
-  const config = getRepoConfig();
-  config.playAsUsername = username;
-  saveRepoConfig(config);
+  setValue('githubUsername', username, 'repo');
 }
 
 // Choosing personal credit must remove an existing override, not just skip
-// writing one — the override survives re-runs of init otherwise.
+// writing one — the override survives re-runs of init otherwise. Both keys go:
+// a repo config written by 3.1.x can still hold the legacy one if this runs
+// before migrateRepoIdentity has managed to persist.
 export function clearPlayAsUsername(): void {
   const config = getRepoConfig();
+  delete config.githubUsername;
   delete config.playAsUsername;
   saveRepoConfig(config);
 }
 
 export function getPlayAsUsername(): string | null {
-  const config = getRepoConfig();
-  return config.playAsUsername || null;
+  return getRepoConfig().githubUsername || null;
 }
 
-export function getRepoInfo(): { owner: string; name: string; url: string } | null {
+export interface RepoInfo {
+  owner: string;
+  name: string;
+  url: string;
+}
+
+// The real remote, privacy mode or not. Only for local decisions that never
+// reach the server — asking who to credit, checking visibility on GitHub.
+// Anything sent to the API must go through getRepoInfo().
+export function getRemoteRepoInfo(): RepoInfo | null {
   try {
     const remoteUrl = execSync('git config --get remote.origin.url', { encoding: 'utf-8' }).trim();
 
     // Parse GitHub URL (supports both HTTPS and SSH)
     const match = remoteUrl.match(/github\.com[:/](.+?)\/(.+?)(\.git)?$/);
 
-    if (match) {
-      const owner = match[1];
-      const name = match[2];
-
-      // If privacy mode is enabled, return obfuscated info
-      if (isPrivateRepo()) {
-        return {
-          owner: 'private',
-          name: 'private',
-          url: 'private',
-        };
-      }
-
-      return {
-        owner,
-        name,
-        url: `https://github.com/${owner}/${name}`,
-      };
+    if (!match) {
+      return null;
     }
 
-    return null;
+    const owner = match[1];
+    const name = match[2];
+
+    return {
+      owner,
+      name,
+      url: `https://github.com/${owner}/${name}`,
+    };
   } catch {
     return null;
   }
+}
+
+export function getRepoInfo(): RepoInfo | null {
+  const info = getRemoteRepoInfo();
+
+  if (!info) {
+    return null;
+  }
+
+  // If privacy mode is enabled, return obfuscated info
+  if (isPrivateRepo()) {
+    return { owner: 'private', name: 'private', url: 'private' };
+  }
+
+  return info;
 }

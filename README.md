@@ -103,15 +103,28 @@ git-slot-machine sync
 
 ### Configuration
 
+Settings live in two files: `~/.git-slot-machine/config.json` (global) and
+`.git/slot-machine-config.json` (this repo). A repo setting overrides the global
+one. Every command below writes the scope it names in its output.
+
 ```bash
-# View current configuration
-git-slot-machine config list
+# Sync and privacy default to THIS repo; add --global for every repo
+git-slot-machine sync:disable
+git-slot-machine sync:disable --global
 
-# Set API URL (default: Laravel Cloud)
-git-slot-machine config set api-url https://api.gitslotmachine.com/api
+# Hide this repo's name and owner from the server (username is still sent)
+git-slot-machine privacy:on
+git-slot-machine privacy:off
 
-# Enable/disable automatic syncing
-git-slot-machine config set sync-enabled true
+# Identity defaults to global; --repo credits only this repo
+git-slot-machine username:set your-username
+git-slot-machine username:set your-org --repo
+
+# Show which file owns each setting
+git-slot-machine whoami
+
+# API URL is global-only (a per-repo one could redirect authenticated syncs)
+git-slot-machine config:set api-url https://gitslotmachine.com/api
 ```
 
 ---
@@ -242,8 +255,9 @@ Based on character counts:
 ### Organization vs Personal Credits
 
 When you run `git-slot-machine init` in a repo owned by an organization:
-- You'll be asked who should get credit for commits: **you** or **the org**
-- This choice is **per-repo** and stored locally (`.git/slot-machine-config.json`)
+- You'll be asked who should get credit for commits: **you** or **the org** (asked in privacy mode too — privacy hides the repo, not the username)
+- This choice is **per-repo** and stored locally as `githubUsername` in `.git/slot-machine-config.json`
+- Change it later without re-running `init`: `git-slot-machine username:set <name> --repo`
 - Personal repos automatically credit your personal account
 - Perfect for company repos where you want org stats, or personal projects where you want individual credit
 
@@ -257,7 +271,8 @@ The CLI sends the following data to the server when authenticated:
 
 Your balance is tracked both locally and on the server. You can disable syncing anytime:
 ```bash
-git-slot-machine config set sync-enabled false
+git-slot-machine sync:disable            # this repo
+git-slot-machine sync:disable --global   # every repo
 ```
 
 ---

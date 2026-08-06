@@ -4,7 +4,7 @@ import * as readline from 'readline';
 import chalk from 'chalk';
 import { isGitRepo, detectGitHubUsername } from '../utils/git.js';
 import { POST_COMMIT_HOOK } from '../templates/post-commit.js';
-import { getRepoInfo, setGitHubUsername, getGlobalConfig, setPrivateRepo, setPlayAsUsername, clearPlayAsUsername } from '../config.js';
+import { getRemoteRepoInfo, setGitHubUsername, getGlobalConfig, setPrivateRepo, setPlayAsUsername, clearPlayAsUsername } from '../config.js';
 import { authLoginCommand } from './auth.js';
 
 async function isRepoPublic(owner: string, repo: string): Promise<boolean | null> {
@@ -51,8 +51,11 @@ export async function initCommand(): Promise<void> {
     process.exit(1);
   }
 
-  // Check for GitHub remote
-  const repoInfo = getRepoInfo();
+  // The real remote, not getRepoInfo(): every use below is local — the
+  // visibility check and the credit prompt. Under privacy mode getRepoInfo()
+  // returns private/private, which would query api.github.com/repos/private/
+  // private and offer to credit an org literally named "private".
+  const repoInfo = getRemoteRepoInfo();
 
   if (!repoInfo) {
     console.log();
@@ -66,10 +69,10 @@ export async function initCommand(): Promise<void> {
     process.exit(1);
   }
 
-  // Detect GitHub username (not repo owner). Global-only, NOT
-  // getGitHubUsername(): that resolves playAsUsername first, so re-running
-  // init in a repo already credited to an org would adopt the org as the
-  // personal identity, skip the credit prompt, and persist it globally.
+  // Detect GitHub username (not repo owner). Global config, NOT
+  // getGitHubUsername(): that resolves the per-repo override first, so
+  // re-running init in a repo already credited to an org would adopt the org
+  // as the personal identity, skip the credit prompt, and persist it globally.
   let githubUsername = getGlobalConfig().githubUsername || null;
 
   if (!githubUsername) {
@@ -198,12 +201,19 @@ export async function initCommand(): Promise<void> {
     // Username to authenticate as; may differ from the global personal identity
     let authUsername = githubUsername;
 
-    // Only ask if repo owner is different from personal username and not in privacy mode
-    if (!usePrivacyMode && repoOwner.toLowerCase() !== githubUsername.toLowerCase()) {
+    // Asked in privacy mode too: privacy hides the *repo*, while the username
+    // is sent either way (stated at the top of this command). Suppressing the
+    // question under privacy mode is why a private org repo had no way to be
+    // credited to its org without hand-editing .git/slot-machine-config.json.
+    if (repoOwner.toLowerCase() !== githubUsername.toLowerCase()) {
       console.log(chalk.cyan('Who should get credit for commits in this repo?'));
       console.log();
       console.log(chalk.dim(`  1) ${githubUsername} (your personal account)`));
       console.log(chalk.dim(`  2) ${repoOwner} (this repo's organization)`));
+      if (usePrivacyMode) {
+        console.log();
+        console.log(chalk.dim('  Privacy mode still hides the repo name — only the username is sent.'));
+      }
       console.log();
 
       const choice = await askQuestion(chalk.cyan('Choose (1 or 2): '));

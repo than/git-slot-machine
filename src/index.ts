@@ -10,7 +10,13 @@ import { testCommand } from './commands/test.js';
 import { authLoginCommand, authLogoutCommand, authStatusCommand } from './commands/auth.js';
 import { syncCommand } from './commands/sync.js';
 import { whoamiCommand } from './commands/whoami.js';
-import { configGetCommand, configSetCommand } from './commands/config.js';
+import {
+  configGetCommand,
+  configSetCommand,
+  resolveScope,
+  requireRepoScopeTarget,
+  type ScopeOptions,
+} from './commands/config.js';
 import { getGlobalConfig } from './config.js';
 import { createRequire } from 'module';
 
@@ -109,16 +115,40 @@ program
 
 program
   .command('sync:enable')
-  .description('Enable automatic API sync')
-  .action(async () => {
-    await configSetCommand('sync-enabled', 'true');
+  .description('Enable automatic API sync for this repo')
+  .option('--global', 'Apply to every repo instead of this one')
+  .option('--repo', 'Apply to this repo only (default)')
+  .action(async (options: ScopeOptions) => {
+    await configSetCommand('sync-enabled', 'true', options);
   });
 
 program
   .command('sync:disable')
-  .description('Disable automatic API sync')
-  .action(async () => {
-    await configSetCommand('sync-enabled', 'false');
+  .description('Disable automatic API sync for this repo')
+  .option('--global', 'Apply to every repo instead of this one')
+  .option('--repo', 'Apply to this repo only (default)')
+  .action(async (options: ScopeOptions) => {
+    await configSetCommand('sync-enabled', 'false', options);
+  });
+
+// Privacy commands. Before 3.2 `privateRepo` was only settable during init,
+// so re-running init was the only way to change it.
+program
+  .command('privacy:on')
+  .description('Hide this repo\'s name and owner from the server')
+  .option('--global', 'Apply to every repo instead of this one')
+  .option('--repo', 'Apply to this repo only (default)')
+  .action(async (options: ScopeOptions) => {
+    await configSetCommand('private-repo', 'true', options);
+  });
+
+program
+  .command('privacy:off')
+  .description('Send this repo\'s name and owner to the server')
+  .option('--global', 'Apply to every repo instead of this one')
+  .option('--repo', 'Apply to this repo only (default)')
+  .action(async (options: ScopeOptions) => {
+    await configSetCommand('private-repo', 'false', options);
   });
 
 // Username commands
@@ -133,17 +163,27 @@ program
   .command('username:set')
   .description('Set GitHub username')
   .argument('<username>', 'Your GitHub username')
-  .action(async (username: string) => {
+  .option('--global', 'Apply to every repo (default)')
+  .option('--repo', 'Credit only this repo to this username')
+  .action(async (username: string, options: ScopeOptions) => {
     const { setGitHubUsername } = await import('./config.js');
-    setGitHubUsername(username);
-    console.log(chalk.green(`GitHub username set to: ${username}`));
+    const scope = resolveScope(options, 'global');
+    requireRepoScopeTarget(scope);
+    setGitHubUsername(username, scope);
+    console.log(
+      chalk.green(
+        scope === 'global'
+          ? `GitHub username set to: ${username}`
+          : `Commits in this repo will be credited to ${username}`
+      )
+    );
   });
 
 // Config commands (advanced - hidden from main help)
 program
   .command('config:get', { hidden: true })
   .description('Get configuration value (advanced)')
-  .argument('<key>', 'Configuration key (api-url, sync-enabled, all)')
+  .argument('<key>', 'Configuration key (api-url, sync-enabled, private-repo, all)')
   .action(async (key: string) => {
     await configGetCommand(key);
   });
@@ -151,10 +191,12 @@ program
 program
   .command('config:set', { hidden: true })
   .description('Set configuration value (advanced)')
-  .argument('<key>', 'Configuration key (api-url, sync-enabled)')
+  .argument('<key>', 'Configuration key (api-url, sync-enabled, private-repo)')
   .argument('<value>', 'Configuration value')
-  .action(async (key: string, value: string) => {
-    await configSetCommand(key, value);
+  .option('--global', 'Write to the global config')
+  .option('--repo', 'Write to this repo\'s config')
+  .action(async (key: string, value: string, options: ScopeOptions) => {
+    await configSetCommand(key, value, options);
   });
 
 program.parse();

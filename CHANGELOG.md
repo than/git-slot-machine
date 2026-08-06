@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-08-06
+
+### Changed
+
+- **`sync:disable` now silences only the current repo.** It previously wrote the global config, silencing every repo at once. `sync:disable --global` restores the old behavior. This is the intended fix, but it will surprise anyone who relied on the old default.
+- Every setting is now settable at either scope. `sync:enable`/`sync:disable` and `privacy:on`/`privacy:off` default to this repo, `username:set` and `config:set api-url` default to global, and each accepts `--global`/`--repo`. All of them print which file they wrote.
+- `privateRepo` resolves through the merged config, so a global `privateRepo: true` means "default all my repos to private". No existing config sets it globally, so this is a no-op on upgrade.
+- `api-url` stays global-only and rejects `--repo` — `getApiUrl()` reads global config only so a repo can't redirect an authenticated sync, which would make a per-repo value silently inert.
+- `whoami` marks which file owns each setting, and names the global value when a repo overrides it.
+
+### Added
+
+- **`git-slot-machine privacy:on` / `privacy:off`** — privacy mode was previously only settable during `init`, so re-running `init` was the only way to change it.
+- `config:get`/`config:set` accept `private-repo`.
+
+### Fixed
+
+- **`init` asks who gets credit in private repos.** The org-credit prompt was suppressed under privacy mode, so a private org repo could only be credited to its org by hand-editing `.git/slot-machine-config.json`. Privacy hides the repo name; the username is sent either way.
+- `init` reads the real git remote for its visibility check and credit prompt. With privacy mode already on, it was reading the obfuscated `private/private` — querying `api.github.com/repos/private/private` and offering to credit an org named "private".
+- The per-repo identity override and the global identity are one key (`githubUsername`) resolved through the normal merge, replacing the `playAsUsername` special case. Existing repo configs are migrated on first read, idempotently and without a write when there is nothing to migrate.
+- Repo-scoped writes outside a git repository report "not a git repository" instead of an `ENOENT` stack.
+
 ## [3.1.1] - 2026-08-06
 
 ### Added
