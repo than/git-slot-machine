@@ -71,24 +71,38 @@ export function getGlobalConfig(): Config {
   }
 }
 
-// Move a pre-3.1 single `apiToken` under the username it belongs to.
-// Idempotent, and a no-op when we can't attribute the token to anyone.
+// Normalize a pre-3.1.1 config on read: move the single legacy `apiToken`
+// under the username it belongs to, and lowercase existing `apiTokens` keys —
+// 3.1.0 stored them with whatever casing the user typed, and every lookup is
+// lowercased now, so a `Broomfitters` key would otherwise silently miss.
+// Idempotent, and a no-op when there's nothing to normalize.
 function migrateLegacyToken(config: Config): Config {
   const owner = config.githubUsername?.toLowerCase();
 
-  if (!config.apiToken || !owner) {
-    return config;
+  const apiTokens: Record<string, string> = {};
+  for (const [key, value] of Object.entries(config.apiTokens || {})) {
+    // First writer wins on a casing collision, matching pre-3.1.1 lookups
+    apiTokens[key.toLowerCase()] ??= value;
   }
-
-  const apiTokens = { ...config.apiTokens };
 
   // Keep whichever token is already attributed; either way the legacy
   // field has served its purpose and must not linger in the file.
-  if (!apiTokens[owner]) {
+  if (config.apiToken && owner && !apiTokens[owner]) {
     apiTokens[owner] = config.apiToken;
   }
 
-  const migrated: Config = { ...config, apiTokens };
+  const keysChanged =
+    Object.keys(apiTokens).length !== Object.keys(config.apiTokens || {}).length ||
+    Object.keys(config.apiTokens || {}).some((key) => key !== key.toLowerCase());
+
+  if (!config.apiToken && !keysChanged) {
+    return config;
+  }
+
+  const migrated: Config = { ...config };
+  if (Object.keys(apiTokens).length > 0 || config.apiTokens) {
+    migrated.apiTokens = apiTokens;
+  }
   delete migrated.apiToken;
 
   // Persisting is desirable, not load-bearing: a failed write (read-only

@@ -98,6 +98,28 @@ describe('config: per-identity tokens and legacy migration', () => {
     expect(getApiToken()).toBe('personal');
   });
 
+  it('lowercases mixed-case keys written by 3.1.0 so lookups still hit', () => {
+    // 3.1.0 stored keys with the casing the user typed; 3.1.1 lowercases every
+    // lookup, so without key normalization these tokens would silently miss.
+    writeGlobalConfig({
+      githubUsername: 'than',
+      apiTokens: {
+        than: 'personal',
+        Broomfitters: 'org-token',
+        PlaydownApp: 'app-token',
+      },
+    });
+    setPlayAsUsername('Broomfitters');
+
+    expect(getApiToken()).toBe('org-token');
+    expect(getAuthenticatedUsernames()).toEqual(['broomfitters', 'playdownapp', 'than']);
+    expect(Object.keys(readGlobalConfigFile().apiTokens).sort()).toEqual([
+      'broomfitters',
+      'playdownapp',
+      'than',
+    ]);
+  });
+
   it('stores and looks up tokens case-insensitively', () => {
     writeGlobalConfig({ githubUsername: 'other' });
     setApiToken('org-token', 'Netflix');
