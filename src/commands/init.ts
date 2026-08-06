@@ -4,7 +4,7 @@ import * as readline from 'readline';
 import chalk from 'chalk';
 import { isGitRepo, detectGitHubUsername } from '../utils/git.js';
 import { POST_COMMIT_HOOK } from '../templates/post-commit.js';
-import { getRepoInfo, setGitHubUsername, getGitHubUsername, setPrivateRepo, setPlayAsUsername } from '../config.js';
+import { getRepoInfo, setGitHubUsername, getGlobalConfig, setPrivateRepo, setPlayAsUsername } from '../config.js';
 import { authLoginCommand } from './auth.js';
 
 async function isRepoPublic(owner: string, repo: string): Promise<boolean | null> {
@@ -66,8 +66,11 @@ export async function initCommand(): Promise<void> {
     process.exit(1);
   }
 
-  // Detect GitHub username (not repo owner)
-  let githubUsername = getGitHubUsername();
+  // Detect GitHub username (not repo owner). Global-only, NOT
+  // getGitHubUsername(): that resolves playAsUsername first, so re-running
+  // init in a repo already credited to an org would adopt the org as the
+  // personal identity, skip the credit prompt, and persist it globally.
+  let githubUsername = getGlobalConfig().githubUsername || null;
 
   if (!githubUsername) {
     // Try to detect from git config

@@ -59,10 +59,15 @@ export async function authLogoutCommand(options: { all?: boolean } = {}): Promis
 
       // Revoke the active identity's token on the server; the rest are
       // cleared locally (revocation needs each token to be the active one).
-      await apiLogout();
+      const revoked = await apiLogout();
       clearAllApiTokens();
 
-      console.log(chalk.green(`Logged out all identities: ${identities.join(', ')}`));
+      console.log(chalk.green(`Cleared local tokens for: ${identities.join(', ')}`));
+      if (revoked) {
+        console.log(chalk.dim('The active identity\'s token was revoked on the server; the others remain valid there.'));
+      } else {
+        console.log(chalk.yellow('Could not reach the server — the tokens may still be valid. Revoke them at gitslotmachine.com.'));
+      }
       return;
     }
 
@@ -75,12 +80,17 @@ export async function authLogoutCommand(options: { all?: boolean } = {}): Promis
     }
 
     // Try to revoke token on server
-    await apiLogout();
+    const revoked = await apiLogout();
 
     // Clear local token for this identity only
     clearApiToken();
 
     console.log(chalk.green(`Successfully logged out${username ? ` as ${username}` : ''}.`));
+    if (!revoked) {
+      // Nothing expires or rotates tokens server-side, so a silently failed
+      // revocation leaves a live bearer token the user believes is dead.
+      console.log(chalk.yellow('Could not reach the server — the token may still be valid. Revoke it at gitslotmachine.com.'));
+    }
 
     const remaining = getAuthenticatedUsernames();
     if (remaining.length > 0) {
@@ -107,7 +117,7 @@ export async function authStatusCommand(): Promise<void> {
       }
       console.log();
       console.log('To authenticate, run:');
-      console.log(chalk.cyan(`  git-slot-machine auth login ${username || '<your-github-username>'}`));
+      console.log(chalk.cyan(`  git-slot-machine login ${username || '<your-github-username>'}`));
       return;
     }
 
@@ -126,7 +136,7 @@ export async function authStatusCommand(): Promise<void> {
       console.log(chalk.dim(`API URL: ${apiUrl}`));
       console.log();
       console.log('Please login again:');
-      console.log(chalk.cyan('  git-slot-machine auth login <your-github-username>'));
+      console.log(chalk.cyan('  git-slot-machine login <your-github-username>'));
     }
   } catch (error) {
     console.error(chalk.red(`Error: ${(error as Error).message}`));

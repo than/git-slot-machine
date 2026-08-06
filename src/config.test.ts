@@ -131,12 +131,39 @@ describe('config: per-identity tokens and legacy migration', () => {
 
   it('serves the migrated config in memory when the write-back fails', () => {
     writeGlobalConfig({ githubUsername: 'than', apiToken: 'legacy-token' });
-    fs.chmodSync(globalConfigPath(), 0o400);
 
-    // Migration can't persist (config file is read-only), but the read must
-    // return the migrated config, not `{}` — a valid file is on disk.
-    expect(getApiToken()).toBe('legacy-token');
+    // A mocked throw, not chmod 0o400: root ignores permission bits, so under
+    // root CI a chmod-based block silently stops exercising this path.
+    const writeSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(() => {
+      throw new Error('EROFS: read-only file system');
+    });
+
+    try {
+      // Migration can't persist, but the read must return the migrated
+      // config, not `{}` — a valid file is on disk.
+      expect(getApiToken()).toBe('legacy-token');
+      expect(getGlobalConfig().githubUsername).toBe('than');
+    } finally {
+      writeSpy.mockRestore();
+    }
+
+    // The on-disk file is untouched, still awaiting migration on a next read.
+    expect(readGlobalConfigFile().apiToken).toBe('legacy-token');
+  });
+
+  it('keeps the global identity personal when a playAs override is present', () => {
+    // init's identity detection must read the global config, not the resolved
+    // identity: resolving playAsUsername first is how a re-run in an org repo
+    // used to adopt the org globally.
+    writeGlobalConfig({ githubUsername: 'than', apiTokens: { than: 'personal' } });
+    setPlayAsUsername('acme-corp');
+
     expect(getGlobalConfig().githubUsername).toBe('than');
+
+    // The org login path persists its token without touching the identity
+    setApiToken('org-token', 'acme-corp');
+    expect(getGlobalConfig().githubUsername).toBe('than');
+    expect(getAuthenticatedUsernames()).toEqual(['acme-corp', 'than']);
   });
 
   it('writes the global config owner-only', () => {

@@ -23,9 +23,16 @@ function getGlobalConfigPath(): string {
   const homeDir = os.homedir();
   const configDir = path.join(homeDir, '.git-slot-machine');
 
-  // Ensure config directory exists — owner-only: it holds bearer tokens
+  // Owner-only: it holds bearer tokens. The chmod self-heals directories
+  // created 0755 by pre-3.1 versions; best-effort for the same reasons as
+  // the file chmod in saveGlobalConfig.
   if (!fs.existsSync(configDir)) {
     fs.mkdirSync(configDir, { recursive: true, mode: 0o700 });
+  }
+  try {
+    fs.chmodSync(configDir, 0o700);
+  } catch {
+    // best effort
   }
 
   return path.join(configDir, 'config.json');
@@ -149,8 +156,12 @@ export function setGitHubUsername(username: string): void {
   saveGlobalConfig(config);
 }
 
+// Global-only, like getApiToken: getHeaders() attaches the bearer token to
+// whatever host this names, so honoring a repo-local apiUrl would let anything
+// that can write .git/slot-machine-config.json redirect syncs — token attached
+// — to its own server.
 export function getApiUrl(): string {
-  const config = getConfig();
+  const config = getGlobalConfig();
   return config.apiUrl || process.env.GIT_SLOT_MACHINE_API_URL || 'https://gitslotmachine.com/api';
 }
 
