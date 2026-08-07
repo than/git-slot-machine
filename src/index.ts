@@ -17,7 +17,13 @@ import {
   requireRepoScopeTarget,
   type ScopeOptions,
 } from './commands/config.js';
-import { getGlobalConfig } from './config.js';
+import {
+  getGlobalConfig,
+  getPlayAsUsername,
+  setGitHubUsername,
+  getApiTokenFor,
+} from './config.js';
+import { shouldPersistIdentity } from './utils/credit.js';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
@@ -51,7 +57,15 @@ program
   .command('init')
   .description('Install post-commit hook in current repository')
   .action(async () => {
-    await initCommand();
+    // program.parse() isn't awaited, so without this an EACCES on the hook
+    // write surfaces as an unhandled-rejection stack instead of the red
+    // one-liner every other command prints.
+    try {
+      await initCommand();
+    } catch (error) {
+      console.error(chalk.red(`Error: ${(error as Error).message}`));
+      process.exit(1);
+    }
   });
 
 program
@@ -74,14 +88,13 @@ program
   .argument('<github-username>', 'Your GitHub username')
   .action(async (githubUsername: string) => {
     try {
-      // Only adopt the name globally when no identity is established yet, or
-      // when it IS the established identity. Logging in as anything else —
-      // this repo's org override, or a first org login before any override
-      // exists — stores a token without touching the global identity; the
-      // deliberate change is `username:set`.
-      const globalUsername = getGlobalConfig().githubUsername;
-      const persist =
-        !globalUsername || globalUsername.toLowerCase() === githubUsername.toLowerCase();
+      // Logging in as anything that isn't the established identity stores a
+      // token without touching it; the deliberate change is `username:set`.
+      const persist = shouldPersistIdentity(
+        getGlobalConfig().githubUsername,
+        getPlayAsUsername(),
+        githubUsername
+      );
       await authLoginCommand(githubUsername, persist);
     } catch (error) {
       console.error(chalk.red(`Error: ${(error as Error).message}`));
@@ -167,14 +180,13 @@ program
   .option('--repo', 'Credit only this repo to this username')
   .action(async (username: string, options: ScopeOptions) => {
     try {
-      const { setGitHubUsername, getApiTokenFor } = await import('./config.js');
       const scope = resolveScope(options, 'global');
       requireRepoScopeTarget(scope);
       setGitHubUsername(username, scope);
       console.log(
         chalk.green(
           scope === 'global'
-            ? `GitHub username set to: ${username}`
+            ? `GitHub username set globally to: ${username}`
             : `Commits in this repo will be credited to ${username}`
         )
       );

@@ -1,3 +1,30 @@
+// Should `login <name>` adopt that name as the global identity?
+//
+// "Adopt when nothing is established yet" was safe through 3.1.1, because the
+// only writer of a per-repo override was init, which sets the global identity
+// before it ever reaches the credit prompt — so "an override exists but no
+// global identity does" was unreachable. `username:set <name> --repo` is a
+// standalone command now and writes only the repo config, so on a machine that
+// has never run init, following the "log in as <name>" hint would adopt the org
+// globally: every other repo would credit its plays to it, and a bare `logout`
+// would target it. That is the hijack this repo has spent two releases closing.
+//
+// So: an established identity still decides, and a first login still
+// establishes you — except for the one name this repo already routes elsewhere.
+export function shouldPersistIdentity(
+  globalUsername: string | undefined,
+  repoOverride: string | null,
+  loginName: string
+): boolean {
+  const name = loginName.toLowerCase();
+
+  if (globalUsername) {
+    return globalUsername.toLowerCase() === name;
+  }
+
+  return repoOverride?.toLowerCase() !== name;
+}
+
 export interface CreditCandidate {
   name: string;
   label: string;

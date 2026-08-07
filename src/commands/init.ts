@@ -98,6 +98,17 @@ export async function initCommand(): Promise<void> {
     setGitHubUsername(githubUsername);
   }
 
+  // Resolved before the first prompt, not at the hook write: everything below
+  // this point writes repo config or the hook itself, and both need this path.
+  // Discovering it is unresolvable after the privacy answer has been asked for
+  // and saved is how a failure here becomes half-applied state.
+  const gitDir = getGitCommonDir();
+
+  if (!gitDir) {
+    console.error(chalk.red('Error: could not locate this repository\'s .git directory'));
+    process.exit(1);
+  }
+
   // Seeded from config, not `false`: on a re-run privacy mode is already on,
   // and this flag drives the closing "what gets sent" summary. Starting it at
   // false let a re-run print "Repository URL, owner, and name" as sent while
@@ -177,16 +188,7 @@ export async function initCommand(): Promise<void> {
   }
 
   // The common git dir, not cwd/.git: hooks are shared across worktrees, and
-  // in a worktree or from a subdirectory cwd/.git is a file or absent — the
-  // write below would throw ENOTDIR/ENOENT after init had already prompted for
-  // and persisted the privacy answer.
-  const gitDir = getGitCommonDir();
-
-  if (!gitDir) {
-    console.error(chalk.red('Error: could not locate this repository\'s .git directory'));
-    process.exit(1);
-  }
-
+  // in a worktree or from a subdirectory cwd/.git is a file or absent.
   const hookPath = path.join(gitDir, 'hooks', 'post-commit');
   fs.mkdirSync(path.dirname(hookPath), { recursive: true });
 

@@ -42,6 +42,24 @@ export function requireRepoScopeTarget(scope: Scope): void {
 
 const where = (scope: Scope) => (scope === 'global' ? 'globally' : 'for this repo');
 
+const TRUTHY = ['true', '1', 'yes', 'on', 'enabled'];
+const FALSY = ['false', '0', 'no', 'off', 'disabled'];
+
+// Rejects anything it doesn't recognize rather than guessing. Guessing meant
+// `config:set private-repo yes` turned privacy *off* and said so — technically
+// not silent, but the wrong direction for the one key that decides whether a
+// repo's name reaches the server.
+function parseBoolean(key: string, value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+
+  if (TRUTHY.includes(normalized)) return true;
+  if (FALSY.includes(normalized)) return false;
+
+  console.error(chalk.red(`Error: ${key} expects a yes/no value, got: ${value}`));
+  console.log(chalk.dim(`Accepted: ${TRUTHY.join(', ')} / ${FALSY.join(', ')}`));
+  process.exit(1);
+}
+
 export async function configGetCommand(key: string): Promise<void> {
   try {
     switch (key) {
@@ -95,7 +113,7 @@ export async function configSetCommand(
       case 'sync-enabled': {
         const scope = resolveScope(options, 'repo');
         requireRepoScopeTarget(scope);
-        const enabled = value.toLowerCase() === 'true' || value === '1';
+        const enabled = parseBoolean('sync-enabled', value);
         setSyncEnabled(enabled, scope);
         console.log(chalk.green(`Sync ${enabled ? 'enabled' : 'disabled'} ${where(scope)}`));
         break;
@@ -103,7 +121,7 @@ export async function configSetCommand(
       case 'private-repo': {
         const scope = resolveScope(options, 'repo');
         requireRepoScopeTarget(scope);
-        const isPrivate = value.toLowerCase() === 'true' || value === '1';
+        const isPrivate = parseBoolean('private-repo', value);
         setPrivateRepo(isPrivate, scope);
         console.log(
           chalk.green(`Privacy mode ${isPrivate ? 'enabled' : 'disabled'} ${where(scope)}`)

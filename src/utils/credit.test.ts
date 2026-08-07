@@ -1,4 +1,40 @@
-import { creditCandidates } from './credit.js';
+import { creditCandidates, shouldPersistIdentity } from './credit.js';
+
+// `login <name>` adopting a name globally is how every identity hijack this
+// project has fixed began. The rule has to hold for names that arrive by any
+// route, including `username:set <name> --repo` on a machine that has never
+// run init.
+describe('login: when to adopt a name as the global identity', () => {
+  it('establishes the first identity on a fresh machine', () => {
+    expect(shouldPersistIdentity(undefined, null, 'than')).toBe(true);
+  });
+
+  it('keeps an established identity when logging in as someone else', () => {
+    expect(shouldPersistIdentity('than', null, 'broomfitters')).toBe(false);
+  });
+
+  it('re-adopts the established identity, casing aside', () => {
+    expect(shouldPersistIdentity('than', null, 'Than')).toBe(true);
+  });
+
+  it('refuses to adopt this repo\'s override as the global identity', () => {
+    // The hole `username:set --repo` opened: with no global identity yet,
+    // following the "log in as broomfitters" hint would make the org the
+    // identity for every other repo on the machine.
+    expect(shouldPersistIdentity(undefined, 'broomfitters', 'broomfitters')).toBe(false);
+    expect(shouldPersistIdentity(undefined, 'Broomfitters', 'broomfitters')).toBe(false);
+  });
+
+  it('still establishes a different name while an override exists', () => {
+    expect(shouldPersistIdentity(undefined, 'broomfitters', 'than')).toBe(true);
+  });
+
+  it('lets the established identity win over the override', () => {
+    // Logging in as the global identity from an overridden repo is a re-auth,
+    // not an adoption — it must not be blocked by the override.
+    expect(shouldPersistIdentity('than', 'broomfitters', 'than')).toBe(true);
+  });
+});
 
 // The prompt this drives is the only way back to personal credit, and it also
 // decides which identity init authenticates as. A candidate list that is wrong
