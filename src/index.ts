@@ -20,6 +20,7 @@ import {
 import {
   getGlobalConfig,
   getPlayAsUsername,
+  clearPlayAsUsername,
   setGitHubUsername,
   getApiTokenFor,
 } from './config.js';
@@ -201,9 +202,13 @@ program
       // prints the same note after a non-adopting login; without it the token
       // warning below keys on a name that plays here never resolve to, so
       // setting a name you already hold a token for printed nothing at all.
+      // Points at the clear, not at `username:set <global name> --repo`: that
+      // would pin the repo to today's global name, so changing the global
+      // identity later would silently leave this repo behind — and fire this
+      // same note again, recommending the same pin.
       if (scope === 'global' && overrideBefore && overrideBefore.toLowerCase() !== username.toLowerCase()) {
         console.log(chalk.dim(`Note: this repo still credits plays to ${overrideBefore}.`));
-        console.log(chalk.dim('  git-slot-machine username:set ' + username + ' --repo'));
+        console.log(chalk.dim('  git-slot-machine username:unset    (to inherit the global one)'));
       }
 
       // A repo override with no global identity behind it is a half-configured
@@ -231,6 +236,43 @@ program
   });
 
 // Config commands (advanced - hidden from main help)
+// The symmetric half of `username:set --repo`. Before 3.2 the only writer of a
+// per-repo override was init, so init's credit prompt was a proportionate way
+// to remove one. As a standalone creator, --repo needs a standalone clear:
+// init can't always undo it (it exits without a GitHub remote, and skips the
+// prompt entirely when the candidates dedupe to one), which left hand-editing
+// .git/slot-machine-config.json as the only way out — the state #13 opened on.
+program
+  .command('username:unset')
+  .description('Clear this repo\'s username override and inherit the global one')
+  .option('--repo', 'Clear this repo\'s override (default)')
+  .action(() => {
+    try {
+      requireRepoScopeTarget('repo');
+
+      const cleared = getPlayAsUsername();
+
+      if (!cleared) {
+        console.log(chalk.dim('This repo has no username override.'));
+        return;
+      }
+
+      clearPlayAsUsername();
+
+      const inherited = getGlobalConfig().githubUsername;
+
+      console.log(chalk.green(`Cleared this repo's override (was ${cleared})`));
+      console.log(
+        inherited
+          ? chalk.dim(`Commits here are credited to ${inherited} now.`)
+          : chalk.yellow('No global identity set — run: git-slot-machine username:set <name>')
+      );
+    } catch (error) {
+      console.error(chalk.red(`Error: ${(error as Error).message}`));
+      process.exit(1);
+    }
+  });
+
 program
   .command('config:get', { hidden: true })
   .description('Get configuration value (advanced)')

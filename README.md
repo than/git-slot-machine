@@ -122,6 +122,9 @@ git-slot-machine username:set your-username
 git-slot-machine username:set your-org --repo
 git-slot-machine login your-org
 
+# Drop this repo's override and go back to inheriting the global one
+git-slot-machine username:unset
+
 # Show which scope owns each setting, and where both config files live
 git-slot-machine whoami
 
@@ -259,7 +262,7 @@ Based on character counts:
 When you run `git-slot-machine init` in a repo owned by an organization:
 - You'll be asked who should get credit for commits: **you** or **the org** (asked in privacy mode too — privacy hides the repo, not the username)
 - This choice is **per-repo** and stored locally as `githubUsername` in `.git/slot-machine-config.json`
-- Change it later without re-running `init`: `git-slot-machine username:set <name> --repo`
+- Change it later without re-running `init`: `git-slot-machine username:set <name> --repo`, and `git-slot-machine username:unset` to go back to inheriting your global identity
 - Personal repos automatically credit your personal account
 - Perfect for company repos where you want org stats, or personal projects where you want individual credit
 

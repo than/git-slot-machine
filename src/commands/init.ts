@@ -261,13 +261,31 @@ export async function initCommand(): Promise<void> {
       }
       console.log();
 
-      const choice = await askQuestion(
-        chalk.cyan(`Choose (1-${candidates.length}) [1]: `)
-      );
-      console.log();
+      // Only an empty answer takes the default. Choice 1 is the branch that
+      // *clears* an override, so treating a typo as "1" silently drops one the
+      // user never meant to touch — survivable with two options, less so now
+      // that owner plus override can make three.
+      let picked: (typeof candidates)[number] | undefined;
 
-      // Anything unparseable falls to personal, which is also the reset.
-      const picked = candidates[Number(choice) - 1] ?? candidates[0];
+      while (!picked) {
+        const choice = (
+          await askQuestion(chalk.cyan(`Choose (1-${candidates.length}) [1]: `))
+        ).trim();
+
+        if (choice === '') {
+          // Also the EOF answer, so a closed stdin terminates the loop.
+          picked = candidates[0];
+          break;
+        }
+
+        picked = /^\d+$/.test(choice) ? candidates[Number(choice) - 1] : undefined;
+
+        if (!picked) {
+          console.log(chalk.yellow(`Enter a number from 1 to ${candidates.length}.`));
+        }
+      }
+
+      console.log();
 
       if (picked === candidates[0]) {
         // Play as personal username (default). Clear any existing override —

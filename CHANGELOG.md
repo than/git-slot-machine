@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **`git-slot-machine privacy:on` / `privacy:off`** — privacy mode was previously only settable during `init`, so re-running `init` was the only way to change it.
+- **`git-slot-machine username:unset`** — clears this repo's username override so it inherits the global identity again. The only remover used to be `init`'s credit prompt, which was proportionate when `init` was also the only creator; it can't undo every override (it exits without a GitHub remote, and skips the prompt when the candidates dedupe to one), so a standalone creator needed a standalone clear.
 - `config:get`/`config:set` accept `private-repo`.
 
 ### Fixed

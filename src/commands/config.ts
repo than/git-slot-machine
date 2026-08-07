@@ -98,6 +98,10 @@ export async function configSetCommand(
   try {
     switch (key) {
       case 'api-url': {
+        // Runs first so `--global --repo` reports the contradiction rather
+        // than the global-only rule, which is the narrower complaint.
+        resolveScope(options, 'global');
+
         // Deliberately outside the scope model: getApiUrl() reads global only
         // so a repo config can't redirect authenticated syncs, which makes a
         // repo-scoped api-url a setting that silently does nothing.
