@@ -6,6 +6,8 @@ import {
   getGitHubUsername,
   getPlayAsUsername,
   getAuthenticatedUsernames,
+  getGlobalConfigPath,
+  getRepoConfigPath,
   isPrivateRepo,
   isSyncEnabled,
 } from '../config.js';
@@ -81,6 +83,19 @@ export function whoamiCommand(): void {
 
     console.log();
     line('Tokens held', tokens.length > 0 ? chalk.white(tokens.join(', ')) : chalk.yellow('none'));
+
+    // The actual files, not just the scope names above. Worth printing now
+    // that repo config resolves to the *common* git dir — in a worktree or
+    // submodule that is not the `.git` next to you.
+    console.log();
+    line('Global config', chalk.dim(getGlobalConfigPath()));
+
+    const repoConfigPath = getRepoConfigPath();
+
+    if (repoConfigPath) {
+      line('Repo config', chalk.dim(repoConfigPath));
+    }
+
     console.log();
   } catch (error) {
     console.error(chalk.red(`Error: ${(error as Error).message}`));

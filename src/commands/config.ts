@@ -111,17 +111,19 @@ export async function configSetCommand(
         break;
       }
       case 'sync-enabled': {
+        // Value before target: otherwise `sync-enabled maybe` outside a repo
+        // reports the directory, and fixing that surfaces a second error.
+        const enabled = parseBoolean('sync-enabled', value);
         const scope = resolveScope(options, 'repo');
         requireRepoScopeTarget(scope);
-        const enabled = parseBoolean('sync-enabled', value);
         setSyncEnabled(enabled, scope);
         console.log(chalk.green(`Sync ${enabled ? 'enabled' : 'disabled'} ${where(scope)}`));
         break;
       }
       case 'private-repo': {
+        const isPrivate = parseBoolean('private-repo', value);
         const scope = resolveScope(options, 'repo');
         requireRepoScopeTarget(scope);
-        const isPrivate = parseBoolean('private-repo', value);
         setPrivateRepo(isPrivate, scope);
         console.log(
           chalk.green(`Privacy mode ${isPrivate ? 'enabled' : 'disabled'} ${where(scope)}`)

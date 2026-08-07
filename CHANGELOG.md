@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Every setting is now settable at either scope. `sync:enable`/`sync:disable` and `privacy:on`/`privacy:off` default to this repo, `username:set` and `config:set api-url` default to global, and each accepts `--global`/`--repo`. All of them name the scope they wrote ("globally" / "for this repo"); `whoami` names the file.
 - `privateRepo` resolves through the merged config, so a global `privateRepo: true` means "default all my repos to private". No existing config sets it globally, so this is a no-op on upgrade.
 - `api-url` stays global-only and rejects `--repo` — `getApiUrl()` reads global config only so a repo can't redirect an authenticated sync, which would make a per-repo value silently inert.
-- `whoami` marks which file owns each setting, and names the global value when a repo overrides it.
+- `whoami` marks which scope owns each setting, names the global value when a repo overrides it, and prints the path of both config files — worth having now that repo config resolves to the *common* git dir, which in a worktree is not the `.git` next to you.
 
 ### Added
 

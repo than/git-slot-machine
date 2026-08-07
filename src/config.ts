@@ -82,13 +82,13 @@ function isDirectory(target: string): boolean {
   }
 }
 
-function getRepoConfigPath(): string | null {
+export function getRepoConfigPath(): string | null {
   const dir = getGitCommonDir();
   return dir === null ? null : path.join(dir, 'slot-machine-config.json');
 }
 
 // Get global config path
-function getGlobalConfigPath(): string {
+export function getGlobalConfigPath(): string {
   const homeDir = os.homedir();
   const configDir = path.join(homeDir, '.git-slot-machine');
 
@@ -269,9 +269,16 @@ export function setGitHubUsername(username: string, scope: Scope = 'global'): vo
   setValue('githubUsername', username, scope);
 }
 
+// The keys that live in the scope model. `apiTokens`/`apiToken` are excluded
+// on purpose: a token belongs to an identity, not to a directory, and a
+// repo-scoped one would let a directory hold a different token for the same
+// username. Naming them here rather than taking all of `keyof Config` makes
+// the compiler hold that line instead of convention.
+type ScopedKey = 'githubUsername' | 'apiUrl' | 'syncEnabled' | 'privateRepo';
+
 // The one write path for scoped settings. Reuses the existing load/save pairs
 // so there is no second IO route to keep in step.
-function setValue<K extends keyof Config>(key: K, value: Config[K], scope: Scope): void {
+function setValue<K extends ScopedKey>(key: K, value: Config[K], scope: Scope): void {
   if (scope === 'global') {
     const config = getGlobalConfig();
     config[key] = value;

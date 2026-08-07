@@ -182,6 +182,12 @@ program
     try {
       const scope = resolveScope(options, 'global');
       requireRepoScopeTarget(scope);
+
+      // Read before the write, so the global path can tell whether this repo
+      // was already routed elsewhere.
+      const globalUsername = getGlobalConfig().githubUsername;
+      const overrideBefore = getPlayAsUsername();
+
       setGitHubUsername(username, scope);
       console.log(
         chalk.green(
@@ -190,6 +196,24 @@ program
             : `Commits in this repo will be credited to ${username}`
         )
       );
+
+      // The global name doesn't apply here if this repo overrides it. auth.ts
+      // prints the same note after a non-adopting login; without it the token
+      // warning below keys on a name that plays here never resolve to, so
+      // setting a name you already hold a token for printed nothing at all.
+      if (scope === 'global' && overrideBefore && overrideBefore.toLowerCase() !== username.toLowerCase()) {
+        console.log(chalk.dim(`Note: this repo still credits plays to ${overrideBefore}.`));
+        console.log(chalk.dim('  git-slot-machine username:set ' + username + ' --repo'));
+      }
+
+      // A repo override with no global identity behind it is a half-configured
+      // machine: `login <that name>` from any other directory has no override
+      // to check and would adopt it globally. Cheapest place to close that.
+      if (scope === 'repo' && !globalUsername) {
+        console.log();
+        console.log(chalk.yellow('No global identity set yet — other repos have nobody to credit.'));
+        console.log(chalk.cyan('  git-slot-machine username:set your-personal-username'));
+      }
 
       // Plays resolve their token through this name. Without one, every commit
       // posts and fails, and play.ts's "not authenticated" notice is gated off

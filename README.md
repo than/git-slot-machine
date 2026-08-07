@@ -122,7 +122,7 @@ git-slot-machine username:set your-username
 git-slot-machine username:set your-org --repo
 git-slot-machine login your-org
 
-# Show which file owns each setting
+# Show which scope owns each setting, and where both config files live
 git-slot-machine whoami
 
 # API URL is global-only (a per-repo one could redirect authenticated syncs)
