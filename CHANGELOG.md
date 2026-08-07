@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-08-06
+
+### Changed
+
+- **`sync:disable` now silences only the current repo.** It previously wrote the global config, silencing every repo at once. `sync:disable --global` restores the old behavior. This is the intended fix, but it will surprise anyone who relied on the old default.
+- Every setting is now settable at either scope. `sync:enable`/`sync:disable` and `privacy:on`/`privacy:off` default to this repo, `username:set` and `config:set api-url` default to global, and each accepts `--global`/`--repo`. All of them name the scope they wrote ("globally" / "for this repo"); `whoami` names the file.
+- `privateRepo` resolves through the merged config, so a global `privateRepo: true` means "default all my repos to private". No existing config sets it globally, so this is a no-op on upgrade.
+- `api-url` stays global-only and rejects `--repo` — `getApiUrl()` reads global config only so a repo can't redirect an authenticated sync, which would make a per-repo value silently inert.
+- `whoami` marks which scope owns each setting, names the global value when a repo overrides it, and prints the path of both config files — worth having now that repo config resolves to the *common* git dir, which in a worktree is not the `.git` next to you.
+
+### Added
+
+- **`git-slot-machine privacy:on` / `privacy:off`** — privacy mode was previously only settable during `init`, so re-running `init` was the only way to change it.
+- **`git-slot-machine username:unset`** — clears this repo's username override so it inherits the global identity again. The only remover used to be `init`'s credit prompt, which was proportionate when `init` was also the only creator; it can't undo every override (it exits without a GitHub remote, and skips the prompt when the candidates dedupe to one), so a standalone creator needed a standalone clear.
+- `config:get`/`config:set` accept `private-repo`.
+
+### Fixed
+
+- **`init` asks who gets credit in private repos.** The org-credit prompt was suppressed under privacy mode, so a private org repo could only be credited to its org by hand-editing `.git/slot-machine-config.json`. Privacy hides the repo name; the username is sent either way.
+- `init` reads the real git remote for its visibility check and credit prompt. With privacy mode already on, it was reading the obfuscated `private/private` — querying `api.github.com/repos/private/private` and offering to credit an org named "private".
+- The per-repo identity override and the global identity are one key (`githubUsername`) resolved through the normal merge, replacing the `playAsUsername` special case. Existing repo configs are migrated on first read, idempotently and without a write when there is nothing to migrate.
+- Repo-scoped writes outside a git repository report "not a git repository" instead of an `ENOENT` stack.
+- **Repo config resolves the repository's common git directory** instead of assuming `cwd/.git`. It was only readable from the repo root of an ordinary checkout, so with repo now the default scope a repo with sync disabled would sync from a subdirectory, and a private repo would send its real name. In a worktree or submodule `.git` is a *file*, where the write failed with `ENOTDIR`. Linked worktrees share one repo config, matching where their hooks live.
+- `init` installs the post-commit hook into the common git directory, so it works from a subdirectory and inside a worktree instead of throwing `ENOENT`/`ENOTDIR` after already prompting for and saving the privacy answer.
+- **`login <name>` no longer adopts a per-repo identity as the global one.** "Adopt when nothing is established yet" was safe while `init` was the only writer of a per-repo override, since it sets the global identity first. `username:set <name> --repo` writes only the repo config, so on a machine that had never run `init`, following the login hint made the org the identity for every other repo.
+- **`config:set` rejects unrecognized boolean values** instead of coercing them to false — `private-repo yes` used to turn privacy *off*.
+- `init` resolves the git directory before its first prompt, so a failure there can't leave a saved privacy answer with no hook, and its errors print like every other command's instead of an unhandled-rejection stack.
+- **`username:set <name> --repo` warns when no token is held for that name.** Plays resolve their token through the repo-scoped identity, so pointing a repo at an identity you haven't logged in as made every commit's sync fail — silently, because `play` swallows sync errors and its "not authenticated" notice is off in `--small`, the post-commit hook's only mode.
+- **`init` asks who gets credit whenever a per-repo override exists**, not only when the repo owner differs from the personal username. `username:set <name> --repo` (new here) can point any repo at any name, so `than/my-app` overridden to `broomfitters` skipped the question entirely — leaving plays credited to `broomfitters` while `init` authenticated as `than`. The prompt now lists the override as its own option.
+- `init` no longer claims "✓ Public repository confirmed" when privacy mode is already on, and says whether privacy came from this repo or the global default. It seeds privacy state from the config, so a re-run skips the visibility check and the closing summary reports what is actually sent.
+
 ## [3.1.1] - 2026-08-06
 
 ### Added

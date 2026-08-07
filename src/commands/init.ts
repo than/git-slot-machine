@@ -3,8 +3,9 @@ import * as path from 'path';
 import * as readline from 'readline';
 import chalk from 'chalk';
 import { isGitRepo, detectGitHubUsername } from '../utils/git.js';
+import { creditCandidates } from '../utils/credit.js';
 import { POST_COMMIT_HOOK } from '../templates/post-commit.js';
-import { getRepoInfo, setGitHubUsername, getGlobalConfig, setPrivateRepo, setPlayAsUsername, clearPlayAsUsername } from '../config.js';
+import { getRemoteRepoInfo, getGitCommonDir, setGitHubUsername, getGlobalConfig, getRepoConfig, getPlayAsUsername, isPrivateRepo, setPrivateRepo, setPlayAsUsername, clearPlayAsUsername } from '../config.js';
 import { authLoginCommand } from './auth.js';
 
 async function isRepoPublic(owner: string, repo: string): Promise<boolean | null> {
@@ -51,8 +52,11 @@ export async function initCommand(): Promise<void> {
     process.exit(1);
   }
 
-  // Check for GitHub remote
-  const repoInfo = getRepoInfo();
+  // The real remote, not getRepoInfo(): every use below is local — the
+  // visibility check and the credit prompt. Under privacy mode getRepoInfo()
+  // returns private/private, which would query api.github.com/repos/private/
+  // private and offer to credit an org literally named "private".
+  const repoInfo = getRemoteRepoInfo();
 
   if (!repoInfo) {
     console.log();
@@ -66,10 +70,10 @@ export async function initCommand(): Promise<void> {
     process.exit(1);
   }
 
-  // Detect GitHub username (not repo owner). Global-only, NOT
-  // getGitHubUsername(): that resolves playAsUsername first, so re-running
-  // init in a repo already credited to an org would adopt the org as the
-  // personal identity, skip the credit prompt, and persist it globally.
+  // Detect GitHub username (not repo owner). Global config, NOT
+  // getGitHubUsername(): that resolves the per-repo override first, so
+  // re-running init in a repo already credited to an org would adopt the org
+  // as the personal identity, skip the credit prompt, and persist it globally.
   let githubUsername = getGlobalConfig().githubUsername || null;
 
   if (!githubUsername) {
@@ -94,13 +98,51 @@ export async function initCommand(): Promise<void> {
     setGitHubUsername(githubUsername);
   }
 
-  // Check if repository is public
-  console.log(chalk.dim('Checking repository visibility...'));
-  const isPublic = await isRepoPublic(repoInfo.owner, repoInfo.name);
+  // Resolved before the first prompt, not at the hook write: everything below
+  // this point writes repo config or the hook itself, and both need this path.
+  // Discovering it is unresolvable after the privacy answer has been asked for
+  // and saved is how a failure here becomes half-applied state.
+  const gitDir = getGitCommonDir();
 
-  let usePrivacyMode = false;
+  if (!gitDir) {
+    console.error(chalk.red('Error: could not locate this repository\'s .git directory'));
+    process.exit(1);
+  }
 
-  if (isPublic === false) {
+  // Seeded from config, not `false`: on a re-run privacy mode is already on,
+  // and this flag drives the closing "what gets sent" summary. Starting it at
+  // false let a re-run print "Repository URL, owner, and name" as sent while
+  // getRepoInfo() was still sending private/private.
+  let usePrivacyMode = isPrivateRepo();
+
+  if (usePrivacyMode) {
+    // isPrivateRepo() is merged now, so "on" may be a global default rather
+    // than this repo's own setting — say which, since the fix differs.
+    const scopedHere = getRepoConfig().privateRepo === true;
+
+    console.log(
+      chalk.green(
+        scopedHere
+          ? '✓ Privacy mode already enabled for this repo'
+          : '✓ Privacy mode is enabled globally, so it applies here'
+      )
+    );
+    console.log(chalk.dim('Turn it off for this repo with: git-slot-machine privacy:off'));
+    console.log();
+  }
+
+  // Skip the visibility check and its prompts when privacy mode already
+  // answered the question.
+  let isPublic: boolean | null = false;
+
+  if (!usePrivacyMode) {
+    console.log(chalk.dim('Checking repository visibility...'));
+    isPublic = await isRepoPublic(repoInfo.owner, repoInfo.name);
+  }
+
+  if (usePrivacyMode) {
+    // Already answered above.
+  } else if (isPublic === false) {
     console.log(chalk.yellow('⚠️  Private repository detected'));
     console.log();
     console.log(chalk.cyan('Privacy Mode Available'));
@@ -145,7 +187,10 @@ export async function initCommand(): Promise<void> {
     console.log(chalk.green('✓ Public repository confirmed'));
   }
 
-  const hookPath = path.join(process.cwd(), '.git', 'hooks', 'post-commit');
+  // The common git dir, not cwd/.git: hooks are shared across worktrees, and
+  // in a worktree or from a subdirectory cwd/.git is a file or absent.
+  const hookPath = path.join(gitDir, 'hooks', 'post-commit');
+  fs.mkdirSync(path.dirname(hookPath), { recursive: true });
 
   // Check if hook already exists
   if (fs.existsSync(hookPath)) {
@@ -198,33 +243,63 @@ export async function initCommand(): Promise<void> {
     // Username to authenticate as; may differ from the global personal identity
     let authUsername = githubUsername;
 
-    // Only ask if repo owner is different from personal username and not in privacy mode
-    if (!usePrivacyMode && repoOwner.toLowerCase() !== githubUsername.toLowerCase()) {
+    const candidates = creditCandidates(githubUsername, repoOwner, getPlayAsUsername());
+
+    // Asked in privacy mode too: privacy hides the *repo*, while the username
+    // is sent either way (stated at the top of this command). Suppressing the
+    // question under privacy mode is why a private org repo had no way to be
+    // credited to its org without hand-editing .git/slot-machine-config.json.
+    if (candidates.length > 1) {
       console.log(chalk.cyan('Who should get credit for commits in this repo?'));
       console.log();
-      console.log(chalk.dim(`  1) ${githubUsername} (your personal account)`));
-      console.log(chalk.dim(`  2) ${repoOwner} (this repo's organization)`));
-      console.log();
-
-      const choice = await askQuestion(chalk.cyan('Choose (1 or 2): '));
-      console.log();
-
-      if (choice === '2') {
-        // Play as org
-        setPlayAsUsername(repoOwner);
-        console.log(chalk.green(`✓ Commits in this repo will be credited to ${repoOwner}`));
+      candidates.forEach((candidate, index) => {
+        console.log(chalk.dim(`  ${index + 1}) ${candidate.name} (${candidate.label})`));
+      });
+      if (usePrivacyMode) {
         console.log();
-
-        // Authenticate as the org for this repo only; global identity is unchanged
-        authUsername = repoOwner;
-      } else {
-        // Play as personal username (default). Clear any existing override —
-        // on a re-run this branch is the only way back to personal credit,
-        // and printing success while the override survives is the lie.
-        clearPlayAsUsername();
-        console.log(chalk.green(`✓ Commits in this repo will be credited to ${githubUsername}`));
-        console.log();
+        console.log(chalk.dim('  Privacy mode still hides the repo name — only the username is sent.'));
       }
+      console.log();
+
+      // Only an empty answer takes the default. Choice 1 is the branch that
+      // *clears* an override, so treating a typo as "1" silently drops one the
+      // user never meant to touch — survivable with two options, less so now
+      // that owner plus override can make three.
+      let picked: (typeof candidates)[number] | undefined;
+
+      while (!picked) {
+        const choice = (
+          await askQuestion(chalk.cyan(`Choose (1-${candidates.length}) [1]: `))
+        ).trim();
+
+        if (choice === '') {
+          // Also the EOF answer, so a closed stdin terminates the loop.
+          picked = candidates[0];
+          break;
+        }
+
+        picked = /^\d+$/.test(choice) ? candidates[Number(choice) - 1] : undefined;
+
+        if (!picked) {
+          console.log(chalk.yellow(`Enter a number from 1 to ${candidates.length}.`));
+        }
+      }
+
+      console.log();
+
+      if (picked === candidates[0]) {
+        // Play as personal username (default). Clear any existing override —
+        // this branch is the only way back to personal credit on a re-run, and
+        // printing success while the override survives is the lie.
+        clearPlayAsUsername();
+      } else {
+        // Credit this repo to the chosen identity; global identity is unchanged
+        setPlayAsUsername(picked.name);
+        authUsername = picked.name;
+      }
+
+      console.log(chalk.green(`✓ Commits in this repo will be credited to ${picked.name}`));
+      console.log();
     }
 
     // Authenticate
